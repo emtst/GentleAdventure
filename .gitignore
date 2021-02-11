@@ -1,0 +1,11 @@
+# Coq files
+
+*.aux
+*.glob
+*.vo
+*.vo?
+
+
+# Omit files in a generated directory
+
+**/generated/*
