@@ -1,5 +1,5 @@
-(** printing nat %\mathbb% #&#8469;# *)
-(** printing -> %\to% #&#8594;# *)
+(** printing nat %\ensuremath{\mathbb{N}}% #&#8469;# *)
+(** printing -> %\ensuremath{\to}% #&#8594;$ *)
 
 (** * This is a template for Coqdoc Coq files *)
 
@@ -17,10 +17,10 @@ To generate html:
 
 << coqdoc --html -d <output directory> -s --no-index *.v >>
 
-To generate latex: (* have not tried it yet, but these non document
-                      comments do not appear in the output *)
+To generate latex: (* these non document comments do not appear in the
+                      output *)
 
-<< ?? >>
+<< coqdoc --latex -d <output directory> -s --no-index *.v >>
 
 Note:
 
