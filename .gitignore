@@ -4,7 +4,12 @@
 *.glob
 *.vo
 *.vo?
+*.d
 
+# Generated makefiles
+
+Makefile
+Makefile.conf
 
 # Omit files in a generated directory
 
