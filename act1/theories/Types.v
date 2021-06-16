@@ -11,13 +11,13 @@ Require Import MiniEMTST.AtomScopes.
 Require Import MiniEMTST.Syntax.
 Require Import MiniEMTST.Env.
 
-Definition sort_env_entry :=
-  sum_ordType SC_atom_ordType EV_atom_ordType.
-Definition sort_env := @env sort_env_entry sort_eqType.
+(* Definition sort_env_entry := *)
+(*   sum_ordType SC_atom_ordType EV_atom_ordType. *)
+(* Definition sort_env := @env sort_env_entry sort_eqType. *)
 
 (* typing environments store... *)
 Definition ch_entry_ordType := prod_ordType CN_atom_ordType polarity_ordType.
-Definition tp_env_entry := sum_ordType LC_atom_ordType ch_entry_ordType.
+(* Definition tp_env_entry := sum_ordType LC_atom_ordType ch_entry_ordType. *)
 
 (* typing environment contains atoms or atoms with polarities *)
 Definition tp_env := @env tp_env_entry tp_eqType.

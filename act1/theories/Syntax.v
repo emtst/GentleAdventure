@@ -163,19 +163,19 @@ Coercion EV.Free : EV.atom >-> EV.var.
 Coercion EV.Bound : nat >-> EV.var.
 Canonical EV_var_eqType := EqType _ EV.var_eqMixin.
 
-Module SC := AtomScope Atom.Atom. (* Module of the atoms for names *)
-Canonical SC_atom_eqType := EqType SC.atom SC.atom_eqMixin.
-Canonical SC_atom_ordType := OrdType SC.atom SC.atom_ordMixin.
-Coercion SC.Free : SC.atom >-> SC.var.
-Coercion SC.Bound : nat >-> SC.var.
-Canonical SC_var_eqType := EqType _ SC.var_eqMixin.
+(* Module SC := AtomScope Atom.Atom. (* Module of the atoms for names *) *)
+(* Canonical SC_atom_eqType := EqType SC.atom SC.atom_eqMixin. *)
+(* Canonical SC_atom_ordType := OrdType SC.atom SC.atom_ordMixin. *)
+(* Coercion SC.Free : SC.atom >-> SC.var. *)
+(* Coercion SC.Bound : nat >-> SC.var. *)
+(* Canonical SC_var_eqType := EqType _ SC.var_eqMixin. *)
 
-Module LC := AtomScope Atom.Atom. (* Module of the atoms for channels *)
-Canonical LC_atom_eqType := EqType LC.atom LC.atom_eqMixin.
-Canonical LC_atom_ordType := OrdType LC.atom LC.atom_ordMixin.
-Coercion  LC.Free : LC.atom >-> LC.var.
-Coercion  LC.Bound : nat >-> LC.var.
-Canonical LC_var_eqType := EqType _ LC.var_eqMixin.
+(* Module LC := AtomScope Atom.Atom. (* Module of the atoms for channels *) *)
+(* Canonical LC_atom_eqType := EqType LC.atom LC.atom_eqMixin. *)
+(* Canonical LC_atom_ordType := OrdType LC.atom LC.atom_ordMixin. *)
+(* Coercion  LC.Free : LC.atom >-> LC.var. *)
+(* Coercion  LC.Bound : nat >-> LC.var. *)
+(* Canonical LC_var_eqType := EqType _ LC.var_eqMixin. *)
 
 Module CN := AtomScope Atom.Atom. (* Module of the atoms for channel name *)
 Canonical CN_atom_eqType := EqType CN.atom CN.atom_eqMixin.
@@ -185,8 +185,8 @@ Coercion CN.Bound : nat >-> CN.var.
 Canonical CN_var_eqType := EqType _ CN.var_eqMixin.
 
 Notation evar := (EV.var).
-Notation scvar := (SC.var).
-Notation lcvar := (LC.var).
+(* Notation scvar := (SC.var). *)
+(* Notation lcvar := (LC.var). *)
 Notation cnvar := (CN.var).
 
 (******************************************************************************)
@@ -195,26 +195,26 @@ Notation cnvar := (CN.var).
 
 Inductive channel :=
 | Ch of (cnvar * polarity) %type (* a channel with polarity *)
-| Var of lcvar.
+(* | Var of lcvar *). (* HERE <<-- this has to go, all channels are bound in restrictions now (one of these two has to go) *)
 
 (* these definitions explore the dual of locally closed, ie: free bound vars *)
-Definition fbound_chan_c (n : nat) (c : channel) : option nat :=
-  match c with
-  | Var v => LC.get_free_bound n v
-  | _ => None
-  end.
+(* Definition fbound_chan_c (n : nat) (c : channel) : option nat := *)
+(*   match c with *)
+(*   | Var v => LC.get_free_bound n v *)
+(*   | _ => None *)
+(*   end. *)
 
 Definition fbound_chan_k (n : nat) (c : channel) : option nat :=
   match c with
   | Ch (k, _) => CN.get_free_bound n k
-  | _ => None
+  (* | _ => None *)
   end.
 
 Definition eq_channel (a b : channel) : bool :=
   match a, b with
   | Ch (v1, p1), Ch (v2, p2) => (v1 == v2) && (p1 == p2)
-  | Var v1     , Var v2      => v1 == v2
-  | _          , _           => false
+  (* | Var v1     , Var v2      => v1 == v2 *)
+  (* | _          , _           => false *)
   end.
 
 Lemma channel_reflect : Equality.axiom eq_channel.
@@ -223,13 +223,13 @@ Proof.
   case b ; case a =>//= ; (try by constructor); move=> x y.
   by case x=>va pa; case y=>vb pb; case CN.var_reflect; case polarity_reflect;
            move=>H; constructor; congruence.
-  by case: x => [v p]; by constructor; congruence.
-  by case LC.var_reflect; constructor; congruence.
+  (* by case: x => [v p]; by constructor; congruence. *)
+  (* by case LC.var_reflect; constructor; congruence. *)
 Qed.
 
 Definition channel_eqMixin := EqMixin channel_reflect.
 Canonical channel_eqType := EqType _ channel_eqMixin.
-Coercion Var : lcvar >-> channel.
+(* Coercion Var : lcvar >-> channel. *)
 
 (* Build a channel with a name and a polarity*)
 Definition ch (en : CN.atom * polarity) : channel :=
@@ -241,7 +241,7 @@ Notation "X ^-" := (X, Neg) (at level 70).
 Definition dual_ch (k k' : channel) :=
   match k, k' with
   | Ch (a, p), Ch (b, p') => if a == b then dual_pol p == p' else false
-  | _ , _ => false
+  (* | _ , _ => false *)
   end.
 
 Inductive exp : Set :=
@@ -361,11 +361,11 @@ Fixpoint depth (P : proc) :=
   end.
 
 (* open a bound variable with a channel *)
-Definition opc (n : nat) (u : channel) (ch : channel) : channel :=
-  match ch with
-  | Var v => LC.open_var Var n u v
-  | _ => ch
-  end.
+(* Definition opc (n : nat) (u : channel) (ch : channel) : channel := *)
+(*   match ch with *)
+(*   | Var v => LC.open_var Var n u v *)
+(*   | _ => ch *)
+(*   end. *)
 
 (* Open a bound variable in an expression *)
 Definition ope (n : nat) (e' : exp) (e : exp) : exp :=
@@ -378,11 +378,11 @@ Definition ope (n : nat) (e' : exp) (e : exp) : exp :=
 Definition opk (n : nat) (u : CN.var) (ch : channel) : channel :=
   match ch with
   | Ch (k, p) => Ch (CN.open_var id n u k, p)
-  | _ => ch
+  (* | _ => ch *)
   end.
 
 (* open a bound named variable with channel name (SC.atom) *)
-Definition opn n k a := SC.open_var id n k a.
+(* Definition opn n k a := SC.open_var id n k a. *)
 
 Definition shift_ch c :=
   match c with
@@ -392,29 +392,29 @@ Definition shift_ch c :=
 
 
 (* Open a bound variable in a process with a channel *)
-Fixpoint open_c (n : nat) (u : channel) (P : proc) : proc :=
-  match P with
-  | send k e P => send (opc n u k) e (open_c n u P)
-  | receive k P => receive (opc n u k) (open_c n u P)
-  | ife e P Q => ife e (open_c n u P) (open_c n u Q)
-  | par P Q => par (open_c n u P) (open_c n u Q)
-  | nu_ch P => nu_ch (open_c n (shift_ch u) P)
-  | inact => inact
-  | bang P => bang (open_c n u P)
-  end.
-Notation "{op k ~> u } t" := (open_c k u t) (at level 67) : sr_scope.
+(* Fixpoint open_c (n : nat) (u : channel) (P : proc) : proc := *)
+(*   match P with *)
+(*   | send k e P => send (opc n u k) e (open_c n u P) *)
+(*   | receive k P => receive (opc n u k) (open_c n u P) *)
+(*   | ife e P Q => ife e (open_c n u P) (open_c n u Q) *)
+(*   | par P Q => par (open_c n u P) (open_c n u Q) *)
+(*   | nu_ch P => nu_ch (open_c n (shift_ch u) P) *)
+(*   | inact => inact *)
+(*   | bang P => bang (open_c n u P) *)
+(*   end. *)
+(* Notation "{op k ~> u } t" := (open_c k u t) (at level 67) : sr_scope. *)
 
-Fixpoint open_n (n : nat) (u : SC.var) (P : proc) : proc :=
-  match P with
-  | send k e P => send k e (open_n n u P)
-  | receive k P => receive k (open_n n u P)
-  | ife e P Q => ife e (open_n n u P) (open_n n u Q)
-  | par P Q => par (open_n n u P) (open_n n u Q)
-  | nu_ch P => nu_ch (open_n n u P)
-  | inact => inact
-  | bang P => bang (open_n n u P)
-  end.
-Notation "{opn k ~> u } t" := (open_n k u t) (at level 67) : sr_scope.
+(* Fixpoint open_n (n : nat) (u : SC.var) (P : proc) : proc := *)
+(*   match P with *)
+(*   | send k e P => send k e (open_n n u P) *)
+(*   | receive k P => receive k (open_n n u P) *)
+(*   | ife e P Q => ife e (open_n n u P) (open_n n u Q) *)
+(*   | par P Q => par (open_n n u P) (open_n n u Q) *)
+(*   | nu_ch P => nu_ch (open_n n u P) *)
+(*   | inact => inact *)
+(*   | bang P => bang (open_n n u P) *)
+(*   end. *)
+(* Notation "{opn k ~> u } t" := (open_n k u t) (at level 67) : sr_scope. *)
 
 (* Open a bound variable in a process with an expression *)
 Fixpoint open_e (n : nat) (u : exp) (P : proc) : proc :=
@@ -443,38 +443,38 @@ Notation "{opk k ~> u } t" := (open_k k u t) (at level 67) : sr_scope.
 
 Open Scope sr_scope.
 
-Definition open_c0 P u :={op 0 ~> u} P.
+(* Definition open_c0 P u :={op 0 ~> u} P. *)
 Definition open_e0 P u :={ope 0~>u} P.
-Definition open_n0 P u :={opn 0~>u} P.
+(* Definition open_n0 P u :={opn 0~>u} P. *)
 Definition open_k0 P u :={opk 0~>u} P.
 
 Inductive lc_ch : channel -> Prop :=
 | lc_channel a pol: lc_ch (Ch (CN.Free a, pol))
-| lc_free_var a: lc_ch (Var (LC.Free a)).
+(* | lc_free_var a: lc_ch (Var (LC.Free a))*).
 Hint Constructors lc_ch.
 
 Definition lcb_ch (c : channel) : bool :=
   match c with
   | Ch (CN.Free a, pol) => true
-  | Var (LC.Free a) => true
+  (* | Var (LC.Free a) => true *)
   | _ => false
   end.
 
-Lemma freechan_lc_c c :
-  (fbound_chan_c 0 c == None) && (fbound_chan_k 0 c == None) -> lc_ch c.
-Proof. by case: c => [[[]]|[]]. Qed.
+(* Lemma freechan_lc_c c : *)
+(*   (fbound_chan_c 0 c == None) && (fbound_chan_k 0 c == None) -> lc_ch c. *)
+(* Proof. by case: c => [[[]]|[]]. Qed. *)
 
-Lemma lc_c_freechan c :
-  lc_ch c -> (fbound_chan_c 0 c == None) && (fbound_chan_k 0 c == None) .
-Proof. by case. Qed.
+(* Lemma lc_c_freechan c : *)
+(*   lc_ch c -> (fbound_chan_c 0 c == None) && (fbound_chan_k 0 c == None) . *)
+(* Proof. by case. Qed. *)
 
 Lemma lcb_chP : forall c, reflect (lc_ch c) (lcb_ch c).
 Proof.
   case=>//; case=>//=; first case=>///=.
   by move=>a p; apply: (ReflectT _ (lc_channel a p)).
   by move=>n p; apply: ReflectF => H; case F: _ / H => //.
-  by move=>a; apply: (ReflectT _ (lc_free_var a)).
-  by move=>n; apply: ReflectF => H; case F: _ / H => //.
+  (* by move=>a; apply: (ReflectT _ (lc_free_var a)). *)
+  (* by move=>n; apply: ReflectF => H; case F: _ / H => //. *)
 Qed.
 
 Lemma lc_ch_ch k : lc_ch(ch k).
@@ -540,7 +540,7 @@ Inductive lc : proc -> Prop :=
 .
 Hint Constructors lc.
 
-Definition body P := forall (L : seq LC.atom) x, x \notin L -> lc (open_c0 P (LC.Free x)).
+(* Definition body P := forall (L : seq LC.atom) x, x \notin L -> lc (open_c0 P (LC.Free x)). *)
 
 (* Some properties of these definitions  *)
 
@@ -550,17 +550,17 @@ Lemma op_lc_core_exp e j a i u :
     e = ope i u e.
 Proof. by case: e =>//; case=>/= // n /eqP/negPf; case: ifP => // /eqP<-->. Qed.
 
-Fixpoint get_fbound_c (n : nat) (P : proc) : seq nat :=
-  match P with
-  | send k _ P
-  | receive k P => seq_of_opt (fbound_chan_c n k) ++ get_fbound_c n P
-  | ife _ P Q
-  | par P Q => get_fbound_c n P ++ get_fbound_c n Q
-  | nu_ch P => get_fbound_c n P
-  | inact => [::]
-  | bang P => get_fbound_c n P
-  end.
-Definition fbound_c := get_fbound_c 0.
+(* Fixpoint get_fbound_c (n : nat) (P : proc) : seq nat := *)
+(*   match P with *)
+(*   | send k _ P *)
+(*   | receive k P => seq_of_opt (fbound_chan_c n k) ++ get_fbound_c n P *)
+(*   | ife _ P Q *)
+(*   | par P Q => get_fbound_c n P ++ get_fbound_c n Q *)
+(*   | nu_ch P => get_fbound_c n P *)
+(*   | inact => [::] *)
+(*   | bang P => get_fbound_c n P *)
+(*   end. *)
+(* Definition fbound_c := get_fbound_c 0. *)
 
 Fixpoint get_fbound_n (n : nat) (P : proc) : seq nat :=
   match P with
@@ -600,26 +600,26 @@ Definition free_k := get_fbound_k 0.
 
 
 Definition lcb P :=
-  (fbound_c P == [::]) &&
+  (* (fbound_c P == [::]) && *)
   (free_e P == [::]) &&
   (free_k P == [::]) &&
-  (fbound_n P == [::]).
+  (fbound_n P == [::]). (* NOTE there are too many here, REVIEW *)
 
-Definition is_fbound_c (k : nat) (P : proc) := k \in fbound_c P.
+(* Definition is_fbound_c (k : nat) (P : proc) := k \in fbound_c P. *)
 Definition is_fbound_n (k : nat) (P : proc) := k \in fbound_n P.
 Definition is_fbound_e (k : nat) (P : proc) := k \in free_e P.
 Definition is_fbound_k (k : nat) (P : proc) := k \in free_k P.
 
-Lemma fbound_c_open n (x : LC.atom) c :
-  seq_of_opt (fbound_chan_c n.+1 c) = [seq k.-1 | k <- seq_of_opt (fbound_chan_c n (opc n x c))].
-Proof.
-  case: c => //; case=>// m /=; case: ifP; rewrite ltn_neqAle ?(rwP negPf).
-  by move=>/andP-[/negPf->/=->]/=; rewrite subnS.
-  rewrite negb_and=>/orP-[/negPn->//|].
-  rewrite -ltnNge ltn_neqAle eq_sym =>/andP-[/negPf-Hneq].
-  rewrite Hneq leqNgt /=.
-  by rewrite [in if _ then _ else _]leq_eqVlt Hneq =>/negPf->.
-Qed.
+(* Lemma fbound_c_open n (x : LC.atom) c : *)
+(*   seq_of_opt (fbound_chan_c n.+1 c) = [seq k.-1 | k <- seq_of_opt (fbound_chan_c n (opc n x c))]. *)
+(* Proof. *)
+(*   case: c => //; case=>// m /=; case: ifP; rewrite ltn_neqAle ?(rwP negPf). *)
+(*   by move=>/andP-[/negPf->/=->]/=; rewrite subnS. *)
+(*   rewrite negb_and=>/orP-[/negPn->//|]. *)
+(*   rewrite -ltnNge ltn_neqAle eq_sym =>/andP-[/negPf-Hneq]. *)
+(*   rewrite Hneq leqNgt /=. *)
+(*   by rewrite [in if _ then _ else _]leq_eqVlt Hneq =>/negPf->. *)
+(* Qed. *)
 
 Lemma free_k_open n (x : CN.atom) c :
   seq_of_opt (fbound_chan_k n.+1 c) = [seq k.-1 | k <- seq_of_opt (fbound_chan_k n (opk n x c))].
@@ -643,17 +643,17 @@ Proof.
   by rewrite [in if _ then _ else _]leq_eqVlt Hneq =>/negPf->.
 Qed.
 
-Lemma fbound_n_open n (x : SC.atom) c :
-  seq_of_opt (SC.get_free_bound n.+1 c) =
-  [seq k.-1 | k <- seq_of_opt (SC.get_free_bound n (opn n x c))].
-Proof.
-  case: c => // m /=; case: ifP; rewrite ltn_neqAle ?(rwP negPf).
-  by move=>/andP-[/negPf->/=->]/=; rewrite subnS.
-  rewrite negb_and=>/orP-[/negPn->//|].
-  rewrite -ltnNge ltn_neqAle eq_sym =>/andP-[/negPf-Hneq].
-  rewrite Hneq leqNgt /=.
-  by rewrite [in if _ then _ else _]leq_eqVlt Hneq =>/negPf->.
-Qed.
+(* Lemma fbound_n_open n (x : SC.atom) c : *)
+(*   seq_of_opt (SC.get_free_bound n.+1 c) = *)
+(*   [seq k.-1 | k <- seq_of_opt (SC.get_free_bound n (opn n x c))]. *)
+(* Proof. *)
+(*   case: c => // m /=; case: ifP; rewrite ltn_neqAle ?(rwP negPf). *)
+(*   by move=>/andP-[/negPf->/=->]/=; rewrite subnS. *)
+(*   rewrite negb_and=>/orP-[/negPn->//|]. *)
+(*   rewrite -ltnNge ltn_neqAle eq_sym =>/andP-[/negPf-Hneq]. *)
+(*   rewrite Hneq leqNgt /=. *)
+(*   by rewrite [in if _ then _ else _]leq_eqVlt Hneq =>/negPf->. *)
+(* Qed. *)
 
 Ltac fo_by_ind P n x :=
   let IH := fresh in let IH1 := fresh in let IH2 := fresh in
@@ -678,11 +678,11 @@ Ltac fo_by_ind P n x :=
     try (rewrite IH2) => //;
     try (rewrite !map_cat) => //.
 
-Lemma free_open_c  n p (x : LC.atom) :
-  get_fbound_c n.+1 p = [seq k.-1 | k <- get_fbound_c n ({op n ~> x} p)].
-Proof.
-  (* fo_by_ind p n x; by rewrite !(fbound_c_open n x). Qed. *)
-Admitted.
+(* Lemma free_open_c  n p (x : LC.atom) : *)
+(*   get_fbound_c n.+1 p = [seq k.-1 | k <- get_fbound_c n ({op n ~> x} p)]. *)
+(* Proof. *)
+(*   (* fo_by_ind p n x; by rewrite !(fbound_c_open n x). Qed. *) *)
+(* Admitted. *)
 
 Lemma free_open_e  n p (x : EV.atom) :
   get_fbound_e n.+1 p = [seq k.-1 | k <- get_fbound_e n ({ope n ~> x} p)].
@@ -690,11 +690,11 @@ Proof.
   (* fo_by_ind p n x; by rewrite !(free_e_open n x). Qed. *)
 Admitted.
 
-Lemma free_open_n  n p (x : SC.atom) :
-  get_fbound_n n.+1 p = [seq k.-1 | k <- get_fbound_n n ({opn n ~> x} p)].
-Proof.
-  (* fo_by_ind p n x; by rewrite !(fbound_n_open n x). Qed. *)
-Admitted.
+(* Lemma free_open_n  n p (x : SC.atom) : *)
+(*   get_fbound_n n.+1 p = [seq k.-1 | k <- get_fbound_n n ({opn n ~> x} p)]. *)
+(* Proof. *)
+(*   (* fo_by_ind p n x; by rewrite !(fbound_n_open n x). Qed. *) *)
+(* Admitted. *)
 
 Lemma free_open_k  n p (x : CN.atom) :
   get_fbound_k n.+1 p = [seq k.-1 | k <- get_fbound_k n ({opk n ~> x} p)].
@@ -770,10 +770,10 @@ Ltac by_proc_induction2 P n m :=
                | p IH] n m /=;
   try (rewrite -IH => //); try (rewrite -IH1 => //); try (rewrite -IH2 => //).
 
-Lemma depth_op_ch k x P : depth P = depth ({op k ~> x} P).
-Proof. (* by_proc_induction2 P k x; easy. Qed. *) Admitted.
-Lemma depth_opn_ch k x P : depth P = depth ({opn k ~> x} P).
-Proof. (* by_proc_induction P k; easy. Qed. *) Admitted.
+(* Lemma depth_op_ch k x P : depth P = depth ({op k ~> x} P). *)
+(* Proof. (* by_proc_induction2 P k x; easy. Qed. *) Admitted. *)
+(* Lemma depth_opn_ch k x P : depth P = depth ({opn k ~> x} P). *)
+(* Proof. (* by_proc_induction P k; easy. Qed. *) Admitted. *)
 Lemma depth_ope_ch k x P : depth P = depth ({ope k ~> x} P).
 Proof. (* by_proc_induction P k; easy. Qed. *) Admitted.
 Lemma depth_opk_ch k x P : depth P = depth ({opk k ~> x} P).
@@ -788,89 +788,89 @@ Lemma seqofopt_nil (A : eqType) (s1 : option A) :
 Proof. by case: s1. Qed.
 
 (* False! Unless x not free_k *)
-Lemma freechan_k_open_c i n c (x : LC.atom) :
-  fbound_chan_k i c = fbound_chan_k i (opc n x c).
-Proof. by case: c=>//; case=>///=m;case: ifP. Qed.
+(* Lemma freechan_k_open_c i n c (x : LC.atom) : *)
+(*   fbound_chan_k i c = fbound_chan_k i (opc n x c). *)
+(* Proof. by case: c=>//; case=>///=m;case: ifP. Qed. *)
 
-Lemma freechan_c_open_k i n c (x : CN.atom) :
-  fbound_chan_c i c = fbound_chan_c i (opk n x c).
-Proof. by case: c=>//; case=>///=m;case: ifP. Qed.
+(* Lemma freechan_c_open_k i n c (x : CN.atom) : *)
+(*   fbound_chan_c i c = fbound_chan_c i (opk n x c). *)
+(* Proof. by case: c=>//; case=>///=m;case: ifP. Qed. *)
 
 
-Lemma getfree_e_open_c x n i p : get_fbound_e i p = get_fbound_e i ({op n ~> LC.Free x} p).
-Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
-Lemma getfree_k_open_c x n i p : get_fbound_k i p = get_fbound_k i ({op n ~> LC.Free x} p).
-Proof. (* by_proc_induction2 p n i; rewrite -?freechan_k_open_c =>//. Qed. *) Admitted.
-Lemma getfbound_n_open_c x n i p : get_fbound_n i p = get_fbound_n i ({op n ~> LC.Free x} p).
-Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
-Lemma getfbound_c_open_e x n i p : get_fbound_c i p = get_fbound_c i ({ope n ~> EV.Free x} p).
-Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
+(* Lemma getfree_e_open_c x n i p : get_fbound_e i p = get_fbound_e i ({op n ~> LC.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted. *)
+(* Lemma getfree_k_open_c x n i p : get_fbound_k i p = get_fbound_k i ({op n ~> LC.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; rewrite -?freechan_k_open_c =>//. Qed. *) Admitted. *)
+(* Lemma getfbound_n_open_c x n i p : get_fbound_n i p = get_fbound_n i ({op n ~> LC.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted. *)
+(* Lemma getfbound_c_open_e x n i p : get_fbound_c i p = get_fbound_c i ({ope n ~> EV.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted. *)
 Lemma getfree_k_open_e x n i p : get_fbound_k i p = get_fbound_k i ({ope n ~> EV.Free x} p).
 Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
 Lemma getfbound_n_open_e x n i p : get_fbound_n i p = get_fbound_n i ({ope n ~> EV.Free x} p).
 Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
-Lemma getfbound_c_open_n x n i p : get_fbound_c i p = get_fbound_c i ({opn n ~> SC.Free x} p).
-Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
-Lemma getfree_k_open_n x n i p : get_fbound_k i p = get_fbound_k i ({opn n ~> SC.Free x} p).
-Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
-Lemma getfree_e_open_n x n i p : get_fbound_e i p = get_fbound_e i ({opn n ~> SC.Free x} p).
-Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
-Lemma getfbound_c_open_k x n i p : get_fbound_c i p = get_fbound_c i ({opk n ~> CN.Free x} p).
-Proof. (* by_proc_induction2 p n i; rewrite -?freechan_c_open_k =>//. Qed. *) Admitted.
+(* Lemma getfbound_c_open_n x n i p : get_fbound_c i p = get_fbound_c i ({opn n ~> SC.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted. *)
+(* Lemma getfree_k_open_n x n i p : get_fbound_k i p = get_fbound_k i ({opn n ~> SC.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted. *)
+(* Lemma getfree_e_open_n x n i p : get_fbound_e i p = get_fbound_e i ({opn n ~> SC.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted. *)
+(* Lemma getfbound_c_open_k x n i p : get_fbound_c i p = get_fbound_c i ({opk n ~> CN.Free x} p). *)
+(* Proof. (* by_proc_induction2 p n i; rewrite -?freechan_c_open_k =>//. Qed. *) Admitted. *)
 Lemma getfbound_n_open_k x n i p : get_fbound_n i p = get_fbound_n i ({opk n ~> CN.Free x} p).
 Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
 Lemma getfree_e_open_k x n i p : get_fbound_e i p = get_fbound_e i ({opk n ~> CN.Free x} p).
 Proof. (* by_proc_induction2 p n i; easy. Qed. *) Admitted.
 
-Lemma opk_opc i j n (k : CN.atom) c p :
-  i \notin seq_of_opt (fbound_chan_k n c) ->
-  opk (i+n) k (opc j (Ch (CN.Bound (i+n), p)) c) = opc j (ch (k, p)) c.
-Proof.
-  case: c =>/=// =>[[[|n0 b]]|[|n0 _]] /=//.
-  + case: ifP => /= n_n0.
-    - rewrite in_cons negb_or => /andP-[/negPf].
-      by rewrite -(eqn_add2r n) subnK // =>->.
-    - move =>_; suff: (i + n == n0) = false by move=>->.
-      apply/(rwP negPf); move: n_n0 => /(rwP negPf).
-      apply contra => /eqP<-; rewrite addnC.
-      elim: n => [| n IH] =>//.
-  + by case: ifP =>///= _; rewrite eq_refl.
-Qed.
-
-Lemma op_k_c i j (k : CN.atom) p P :
-  ~~ is_fbound_k i P ->
-  {opk i ~> k} ({op j ~> Ch (CN.Bound i, p)} P )= {op j ~> ch (k, p)} P.
-Proof.
-  rewrite /is_fbound_k/free_k.
-  have: i = 0 + i by [].
-  move: 0 {2 3}i => n i'; move: i' n i j.
-  (* elim: P => [ v P IH *)
-  (*          | v P IH *)
-  (*          | c e P IH *)
-  (*          | c P IH *)
-  (*          | c l P IH *)
-  (*          | c P1 IH1 P2 IH2 *)
-  (*          | c1 c2 P IH *)
-  (*          | c P IH *)
-  (*          | e P1 IH1 P2 IH2 *)
-  (*          | P1 IH1 P2 IH2 *)
-  (*          | *)
-  (*          | P IH *)
-  (*          | P IH *)
-  (*          | P IH ]  /= // i' n i j eq; *)
-  (* try (rewrite !mem_cat !negb_or); *)
-  (* try (move=> /andP-[nfree1 /andP-[nfree2 nfree3]]); *)
-  (* try (move=> /andP-[nfree1 nfree2]); *)
-  (* try (move=> nfree1); *)
-  (* try (rewrite (IH i' n i) => //); *)
-  (* try (rewrite (IH i' n.+1) => //); *)
-  (* try (rewrite (IH1 i' n i)=> //); *)
-  (* try (rewrite (IH2 i' n i)=> //); *)
-  (* try (rewrite eq => //); *)
-  (* try (rewrite addSn => //); *)
-  (* try (rewrite addnC !opk_opc => //). *)
+(* Lemma opk_opc i j n (k : CN.atom) c p : *)
+(*   i \notin seq_of_opt (fbound_chan_k n c) -> *)
+(*   opk (i+n) k (opc j (Ch (CN.Bound (i+n), p)) c) = opc j (ch (k, p)) c. *)
+(* Proof. *)
+(*   case: c =>/=// =>[[[|n0 b]]|[|n0 _]] /=//. *)
+(*   + case: ifP => /= n_n0. *)
+(*     - rewrite in_cons negb_or => /andP-[/negPf]. *)
+(*       by rewrite -(eqn_add2r n) subnK // =>->. *)
+(*     - move =>_; suff: (i + n == n0) = false by move=>->. *)
+(*       apply/(rwP negPf); move: n_n0 => /(rwP negPf). *)
+(*       apply contra => /eqP<-; rewrite addnC. *)
+(*       elim: n => [| n IH] =>//. *)
+(*   + by case: ifP =>///= _; rewrite eq_refl. *)
 (* Qed. *)
-Admitted.
+
+(* Lemma op_k_c i j (k : CN.atom) p P : *)
+(*   ~~ is_fbound_k i P -> *)
+(*   {opk i ~> k} ({op j ~> Ch (CN.Bound i, p)} P )= {op j ~> ch (k, p)} P. *)
+(* Proof. *)
+(*   rewrite /is_fbound_k/free_k. *)
+(*   have: i = 0 + i by []. *)
+(*   move: 0 {2 3}i => n i'; move: i' n i j. *)
+(*   (* elim: P => [ v P IH *) *)
+(*   (*          | v P IH *) *)
+(*   (*          | c e P IH *) *)
+(*   (*          | c P IH *) *)
+(*   (*          | c l P IH *) *)
+(*   (*          | c P1 IH1 P2 IH2 *) *)
+(*   (*          | c1 c2 P IH *) *)
+(*   (*          | c P IH *) *)
+(*   (*          | e P1 IH1 P2 IH2 *) *)
+(*   (*          | P1 IH1 P2 IH2 *) *)
+(*   (*          | *) *)
+(*   (*          | P IH *) *)
+(*   (*          | P IH *) *)
+(*   (*          | P IH ]  /= // i' n i j eq; *) *)
+(*   (* try (rewrite !mem_cat !negb_or); *) *)
+(*   (* try (move=> /andP-[nfree1 /andP-[nfree2 nfree3]]); *) *)
+(*   (* try (move=> /andP-[nfree1 nfree2]); *) *)
+(*   (* try (move=> nfree1); *) *)
+(*   (* try (rewrite (IH i' n i) => //); *) *)
+(*   (* try (rewrite (IH i' n.+1) => //); *) *)
+(*   (* try (rewrite (IH1 i' n i)=> //); *) *)
+(*   (* try (rewrite (IH2 i' n i)=> //); *) *)
+(*   (* try (rewrite eq => //); *) *)
+(*   (* try (rewrite addSn => //); *) *)
+(*   (* try (rewrite addnC !opk_opc => //). *) *)
+(* (* Qed. *) *)
+(* Admitted. *)
 
 Lemma shift_ch_lc k : lc_ch k -> shift_ch k = k.
 Proof. by move/lcb_chP; case: k=>//[][[]a b]. Qed.
@@ -879,39 +879,39 @@ Lemma lcch_shift_ch x : lc_ch x -> lc_ch (shift_ch x).
 Proof.
   by move=>LC; rewrite shift_ch_lc=>//=. Qed.
 
-Lemma opk_opcC i k j c cn :
-  lc_ch cn -> opk i k (opc j cn c) = opc j cn (opk i k c).
-Proof. by case: c=>[[a pa]| [n|n]]/=//; case=>[a p|m]; case: ifP. Qed.
+(* Lemma opk_opcC i k j c cn : *)
+(*   lc_ch cn -> opk i k (opc j cn c) = opc j cn (opk i k c). *)
+(* Proof. by case: c=>[[a pa]| [n|n]]/=//; case=>[a p|m]; case: ifP. Qed. *)
 
-Lemma open_kcC i j k cn P :
-  lc_ch cn ->
-  {opk i ~> k} ({op j ~> cn} P) = {op j ~> cn} ({opk i ~> k} P).
-Proof. Admitted.
-(*   elim: P i j k cn => [ v P IH *)
-(*            | v P IH *)
-(*            | c e P IH *)
-(*            | c P IH *)
-(*            | c l P IH *)
-(*            | c P1 IH1 P2 IH2 *)
-(*            | c1 c2 P IH *)
-(*            | c P IH *)
-(*            | e P1 IH1 P2 IH2 *)
-(*            | P1 IH1 P2 IH2 *)
-(*            | *)
-(*            | P IH *)
-(*            | P IH *)
-(*            | P IH ] /= // i j k cn lc_c; *)
-(*   try (rewrite IH => //); *)
-(*   try (rewrite IH1 => //); *)
-(*   try (rewrite IH2 => //); *)
-(*   try (rewrite !opk_opcC =>//); *)
-(*   try (rewrite shift_ch_lc => //). *)
-(* Qed. *)
+(* Lemma open_kcC i j k cn P : *)
+(*   lc_ch cn -> *)
+(*   {opk i ~> k} ({op j ~> cn} P) = {op j ~> cn} ({opk i ~> k} P). *)
+(* Proof. Admitted. *)
+(* (*   elim: P i j k cn => [ v P IH *) *)
+(* (*            | v P IH *) *)
+(* (*            | c e P IH *) *)
+(* (*            | c P IH *) *)
+(* (*            | c l P IH *) *)
+(* (*            | c P1 IH1 P2 IH2 *) *)
+(* (*            | c1 c2 P IH *) *)
+(* (*            | c P IH *) *)
+(* (*            | e P1 IH1 P2 IH2 *) *)
+(* (*            | P1 IH1 P2 IH2 *) *)
+(* (*            | *) *)
+(* (*            | P IH *) *)
+(* (*            | P IH *) *)
+(* (*            | P IH ] /= // i j k cn lc_c; *) *)
+(* (*   try (rewrite IH => //); *) *)
+(* (*   try (rewrite IH1 => //); *) *)
+(* (*   try (rewrite IH2 => //); *) *)
+(* (*   try (rewrite !opk_opcC =>//); *) *)
+(* (*   try (rewrite shift_ch_lc => //). *) *)
+(* (* Qed. *) *)
 
-Lemma open_k_c (k : CN.atom) p P :
-  ~~ is_fbound_k 0 P ->
-  open_k0 (open_c0 P (Ch (CN.Bound 0, p))) k = open_c0 P (Ch (CN.Free k, p)).
-Proof. by move=> F; rewrite /open_k0/open_c0 op_k_c. Qed.
+(* Lemma open_k_c (k : CN.atom) p P : *)
+(*   ~~ is_fbound_k 0 P -> *)
+(*   open_k0 (open_c0 P (Ch (CN.Bound 0, p))) k = open_c0 P (Ch (CN.Free k, p)). *)
+(* Proof. by move=> F; rewrite /open_k0/open_c0 op_k_c. Qed. *)
 
 Lemma leqSS n m : n.+1 <= m.+1 -> n <= m.
 Proof. by []. Qed.
@@ -1083,94 +1083,94 @@ Proof. by rewrite /is_fbound_k/free_k /= =>/eqP->. Qed.
 Ltac lc_getfree_k H :=
   move: H => /lcP; rewrite /lcb /= => /andP-[/andP-[_ k] _].
 
-Lemma freechan_op_c k n c u :
-  k \notin seq_of_opt (fbound_chan_c n c) -> c = opc (n + k) u c.
-Proof.
-  case: c => //; case => ///= m; case: ifP => /=.
-  + rewrite in_cons negb_or => leq /andP-[/negPf].
-    by rewrite -(eqn_add2l n) subnKC // =>->.
-  + move => /(introT negPf); rewrite -ltnNge => mn _.
-    have: (n + k == m) = false by elim: n m mn =>// n IH; case=>//.
-    by move=>->.
-Qed.
+(* Lemma freechan_op_c k n c u : *)
+(*   k \notin seq_of_opt (fbound_chan_c n c) -> c = opc (n + k) u c. *)
+(* Proof. *)
+(*   case: c => //; case => ///= m; case: ifP => /=. *)
+(*   + rewrite in_cons negb_or => leq /andP-[/negPf]. *)
+(*     by rewrite -(eqn_add2l n) subnKC // =>->. *)
+(*   + move => /(introT negPf); rewrite -ltnNge => mn _. *)
+(*     have: (n + k == m) = false by elim: n m mn =>// n IH; case=>//. *)
+(*     by move=>->. *)
+(* Qed. *)
 
-Theorem op_lc k (u : channel) P :
-    lc P ->
-    P = {op k ~> u} P.
-Proof.
-  move => /lcP/andP-[/andP-[/andP-[fc _] _] _]; move:fc; rewrite /fbound_c =>fc.
-  have : k \notin get_fbound_c 0 P by move: fc => /eqP->.
-  (have: k = 0 + k by []); move: fc 0 {2 3}k =>_ n k0.
-  elim: P k n u =>///=.
-  (* + move => v p IH k n u eq notin; congr request. *)
-  (*   by apply: (IH k.+1 n.+1)=>//; rewrite addSn -eq. *)
-  (* + move => v p IH k n u eq notin; congr accept. *)
-  (*   by apply: (IH k.+1 n.+1 _ _ notin); rewrite addSn -eq. *)
-  + move => c e p IH k n u eq; rewrite mem_cat negb_or => /andP-[fc notin].
-    by congr send; last (by apply: (IH k n)); rewrite eq -freechan_op_c.
-  + move => c p IH k n u eq; rewrite mem_cat negb_or => /andP-[fc notin].
-    by congr receive; last (by apply: (IH k n)); rewrite eq -freechan_op_c.
-  (* + move => c l p IH k n u eq; rewrite !mem_cat !negb_or => /andP-[fc notin]. *)
-  (*   by congr select ; last (by apply: (IH k n)); rewrite eq -freechan_op_c. *)
-  (* + move => c p1 IH1 p2 IH2 k n u eq; *)
-  (*     rewrite !mem_cat !negb_or => /andP-[fc /andP-[ninp ninp']]. *)
-  (*     by congr branch; [ rewrite eq -freechan_op_c *)
-  (*                      | apply: (IH1 k n) *)
-  (*                      | apply: (IH2 k n) ]. *)
-  (* + move => c1 c2 p IH k n u eq; *)
-  (*     rewrite !mem_cat !negb_or => /andP-[fc /andP-[fc' ninp]]. *)
-  (*   by congr throw; [ rewrite eq -freechan_op_c *)
-  (*                   | rewrite eq -freechan_op_c *)
-  (*                   | apply: (IH k n) ]. *)
-  (* + move=> c p IH k n u eq; rewrite !mem_cat !negb_or => /andP-[fc ninp]. *)
-  (*   by congr catch; [ rewrite eq -freechan_op_c *)
-  (*                   | apply: (IH k.+1 n.+1) =>//; rewrite addSn -eq ]. *)
-  + move=> e p1 IH1 p2 IH2 k n u eq;
-             rewrite !mem_cat !negb_or => /andP-[ninp1 ninp2].
-    by congr ife; [ apply: (IH1 k n ) | apply: (IH2 k n ) ].
-  + move=> p1 IH1 p2 IH2 k n u eq;
-             rewrite !mem_cat !negb_or => /andP-[ninp1 ninp2].
-    by congr par; [ apply: (IH1 k n ) | apply: (IH2 k n ) ].
-  (* + by move=> p IH k n u eq nin; congr nu_nm; apply: (IH k n). *)
-  + by move=> p IH k n u eq nin; congr nu_ch; apply: (IH k n).
-  + by move => p IH k n u eq nin; congr bang; apply: (IH k n).
-Qed.
-
-Theorem opn_lc k u P :
-    lc P ->
-    P = {opn k ~> u} P.
-Proof. Admitted.
-(*   move => /lcP/andP-[/andP-[/andP-[_ _] _] fc]; move:fc; rewrite /fbound_n =>fc. *)
-(*   have : k \notin get_fbound_n 0 P by move: fc => /eqP->. *)
+(* Theorem op_lc k (u : channel) P : *)
+(*     lc P -> *)
+(*     P = {op k ~> u} P. *)
+(* Proof. *)
+(*   move => /lcP/andP-[/andP-[/andP-[fc _] _] _]; move:fc; rewrite /fbound_c =>fc. *)
+(*   have : k \notin get_fbound_c 0 P by move: fc => /eqP->. *)
 (*   (have: k = 0 + k by []); move: fc 0 {2 3}k =>_ n k0. *)
 (*   elim: P k n u =>///=. *)
-(*   + move => v p IH k n u eq; rewrite mem_cat negb_or=>/andP-[notin1 notin2]. *)
-(*     rewrite -(IH k n) //; congr request; move: notin1; rewrite eq. *)
-(*     case: v=>///= n0; case: ifP=>/= nn0. *)
-(*     - rewrite in_cons negb_or =>/andP-[neq _]; move: neq =>/negPf. *)
-(*       by rewrite -(eqn_add2r n) subnK // addnC  =>->. *)
-(*     - by move=>_; move: nn0; case: ifP =>///eqP<-; rewrite leq_addr. *)
-(*   + move => v p IH k n u eq; rewrite mem_cat negb_or=>/andP-[notin1 notin2]. *)
-(*     rewrite -(IH k n) //; congr accept; move: notin1; rewrite eq. *)
-(*     case: v=>///= n0; case: ifP=>/= nn0. *)
-(*     - rewrite in_cons negb_or =>/andP-[neq _]; move: neq =>/negPf. *)
-(*       by rewrite -(eqn_add2r n) subnK // addnC  =>->. *)
-(*     - by move=>_; move: nn0; case: ifP =>///eqP<-; rewrite leq_addr. *)
-(*   + by move => c e p IH k n u eq fc; congr send; apply: (IH k n). *)
-(*   + by move => c p IH k n u eq fc; congr receive; apply: (IH k n). *)
-(*   + by move=> c l p IH k n u eq fc; congr select; apply: (IH k n). *)
-(*   + move=> c p IHp q IHq k n u eq; rewrite mem_cat negb_or=>/andP-[fc1 fc2]. *)
-(*     by rewrite -(IHp k n) // -(IHq k n). *)
-(*   + by move => c1 c2 p IH k n u eq fc; congr throw; apply: (IH k n). *)
-(*   + by move=> c p IH k n u eq fc; congr catch; apply: (IH k n). *)
-(*   + move=> e p1 IH1 p2 IH2 k n u eq; rewrite mem_cat negb_or => /andP-[fc1 fc2]. *)
-(*     by rewrite -(IH1 k n) // -(IH2 k n). *)
-(*   + move=> p1 IH1 p2 IH2 k n u eq; rewrite mem_cat negb_or => /andP-[fc1 fc2]. *)
-(*     by rewrite -(IH1 k n) // -(IH2 k n). *)
-(*   + by move=> p IH k n u eq nin; rewrite -(IH k.+1 n.+1) // eq. *)
+(*   (* + move => v p IH k n u eq notin; congr request. *) *)
+(*   (*   by apply: (IH k.+1 n.+1)=>//; rewrite addSn -eq. *) *)
+(*   (* + move => v p IH k n u eq notin; congr accept. *) *)
+(*   (*   by apply: (IH k.+1 n.+1 _ _ notin); rewrite addSn -eq. *) *)
+(*   + move => c e p IH k n u eq; rewrite mem_cat negb_or => /andP-[fc notin]. *)
+(*     by congr send; last (by apply: (IH k n)); rewrite eq -freechan_op_c. *)
+(*   + move => c p IH k n u eq; rewrite mem_cat negb_or => /andP-[fc notin]. *)
+(*     by congr receive; last (by apply: (IH k n)); rewrite eq -freechan_op_c. *)
+(*   (* + move => c l p IH k n u eq; rewrite !mem_cat !negb_or => /andP-[fc notin]. *) *)
+(*   (*   by congr select ; last (by apply: (IH k n)); rewrite eq -freechan_op_c. *) *)
+(*   (* + move => c p1 IH1 p2 IH2 k n u eq; *) *)
+(*   (*     rewrite !mem_cat !negb_or => /andP-[fc /andP-[ninp ninp']]. *) *)
+(*   (*     by congr branch; [ rewrite eq -freechan_op_c *) *)
+(*   (*                      | apply: (IH1 k n) *) *)
+(*   (*                      | apply: (IH2 k n) ]. *) *)
+(*   (* + move => c1 c2 p IH k n u eq; *) *)
+(*   (*     rewrite !mem_cat !negb_or => /andP-[fc /andP-[fc' ninp]]. *) *)
+(*   (*   by congr throw; [ rewrite eq -freechan_op_c *) *)
+(*   (*                   | rewrite eq -freechan_op_c *) *)
+(*   (*                   | apply: (IH k n) ]. *) *)
+(*   (* + move=> c p IH k n u eq; rewrite !mem_cat !negb_or => /andP-[fc ninp]. *) *)
+(*   (*   by congr catch; [ rewrite eq -freechan_op_c *) *)
+(*   (*                   | apply: (IH k.+1 n.+1) =>//; rewrite addSn -eq ]. *) *)
+(*   + move=> e p1 IH1 p2 IH2 k n u eq; *)
+(*              rewrite !mem_cat !negb_or => /andP-[ninp1 ninp2]. *)
+(*     by congr ife; [ apply: (IH1 k n ) | apply: (IH2 k n ) ]. *)
+(*   + move=> p1 IH1 p2 IH2 k n u eq; *)
+(*              rewrite !mem_cat !negb_or => /andP-[ninp1 ninp2]. *)
+(*     by congr par; [ apply: (IH1 k n ) | apply: (IH2 k n ) ]. *)
+(*   (* + by move=> p IH k n u eq nin; congr nu_nm; apply: (IH k n). *) *)
 (*   + by move=> p IH k n u eq nin; congr nu_ch; apply: (IH k n). *)
-(*   + by move=> p IH k n u eq nin; congr bang; apply: (IH k n). *)
+(*   + by move => p IH k n u eq nin; congr bang; apply: (IH k n). *)
 (* Qed. *)
+
+(* Theorem opn_lc k u P : *)
+(*     lc P -> *)
+(*     P = {opn k ~> u} P. *)
+(* Proof. Admitted. *)
+(* (*   move => /lcP/andP-[/andP-[/andP-[_ _] _] fc]; move:fc; rewrite /fbound_n =>fc. *) *)
+(* (*   have : k \notin get_fbound_n 0 P by move: fc => /eqP->. *) *)
+(* (*   (have: k = 0 + k by []); move: fc 0 {2 3}k =>_ n k0. *) *)
+(* (*   elim: P k n u =>///=. *) *)
+(* (*   + move => v p IH k n u eq; rewrite mem_cat negb_or=>/andP-[notin1 notin2]. *) *)
+(* (*     rewrite -(IH k n) //; congr request; move: notin1; rewrite eq. *) *)
+(* (*     case: v=>///= n0; case: ifP=>/= nn0. *) *)
+(* (*     - rewrite in_cons negb_or =>/andP-[neq _]; move: neq =>/negPf. *) *)
+(* (*       by rewrite -(eqn_add2r n) subnK // addnC  =>->. *) *)
+(* (*     - by move=>_; move: nn0; case: ifP =>///eqP<-; rewrite leq_addr. *) *)
+(* (*   + move => v p IH k n u eq; rewrite mem_cat negb_or=>/andP-[notin1 notin2]. *) *)
+(* (*     rewrite -(IH k n) //; congr accept; move: notin1; rewrite eq. *) *)
+(* (*     case: v=>///= n0; case: ifP=>/= nn0. *) *)
+(* (*     - rewrite in_cons negb_or =>/andP-[neq _]; move: neq =>/negPf. *) *)
+(* (*       by rewrite -(eqn_add2r n) subnK // addnC  =>->. *) *)
+(* (*     - by move=>_; move: nn0; case: ifP =>///eqP<-; rewrite leq_addr. *) *)
+(* (*   + by move => c e p IH k n u eq fc; congr send; apply: (IH k n). *) *)
+(* (*   + by move => c p IH k n u eq fc; congr receive; apply: (IH k n). *) *)
+(* (*   + by move=> c l p IH k n u eq fc; congr select; apply: (IH k n). *) *)
+(* (*   + move=> c p IHp q IHq k n u eq; rewrite mem_cat negb_or=>/andP-[fc1 fc2]. *) *)
+(* (*     by rewrite -(IHp k n) // -(IHq k n). *) *)
+(* (*   + by move => c1 c2 p IH k n u eq fc; congr throw; apply: (IH k n). *) *)
+(* (*   + by move=> c p IH k n u eq fc; congr catch; apply: (IH k n). *) *)
+(* (*   + move=> e p1 IH1 p2 IH2 k n u eq; rewrite mem_cat negb_or => /andP-[fc1 fc2]. *) *)
+(* (*     by rewrite -(IH1 k n) // -(IH2 k n). *) *)
+(* (*   + move=> p1 IH1 p2 IH2 k n u eq; rewrite mem_cat negb_or => /andP-[fc1 fc2]. *) *)
+(* (*     by rewrite -(IH1 k n) // -(IH2 k n). *) *)
+(* (*   + by move=> p IH k n u eq nin; rewrite -(IH k.+1 n.+1) // eq. *) *)
+(* (*   + by move=> p IH k n u eq nin; congr nu_ch; apply: (IH k n). *) *)
+(* (*   + by move=> p IH k n u eq nin; congr bang; apply: (IH k n). *) *)
+(* (* Qed. *) *)
 
 Lemma freechan_op_k k n c u :
   k \notin seq_of_opt (fbound_chan_k n c) -> c = opk (n + k) u c.
@@ -1225,15 +1225,15 @@ Proof. Admitted.
 Theorem opk_lc k u P :
     lc P ->
     P = {opk k ~> u} P.
-Proof.
-  move => /lcP/andP-[/andP-[/andP-[_ _] fk] _]; move:fk; rewrite /free_k =>fk.
-  have : k \notin get_fbound_k 0 P by move: fk => /eqP->.
-  (have: k = 0 + k by []); move: fk 0 {2 3}k =>_ n k0.
-  apply: opk_notfree.
-Qed.
+Proof. Admitted.
+(*   move => /lcP/andP-[/andP-[/andP-[_ _] fk] _]; move:fk; rewrite /free_k =>fk. *)
+(*   have : k \notin get_fbound_k 0 P by move: fk => /eqP->. *)
+(*   (have: k = 0 + k by []); move: fk 0 {2 3}k =>_ n k0. *)
+(*   apply: opk_notfree. *)
+(* Qed. *)
 
-Definition subst_ch (z : LC.atom) (k' : channel) (k : channel) : channel :=
-  if k == LC.Free z then k' else k.
+(* Definition subst_ch (z : LC.atom) (k' : channel) (k : channel) : channel := *)
+(*   if k == LC.Free z then k' else k. *)
 
 Definition subst_exp (z : EV.atom) (u : exp) (e : exp) : exp :=
   match e with
@@ -1241,16 +1241,16 @@ Definition subst_exp (z : EV.atom) (u : exp) (e : exp) : exp :=
   | _ => e
   end.
 
-Fixpoint subst_proc (z : LC.atom) (u : channel) (P : proc) : proc :=
-  match P with
-  | send k e P => send (subst_ch z u k) e (subst_proc z u P)
-  | receive k P => receive (subst_ch z u k) (subst_proc z u P)
-  | ife e P Q => ife e (subst_proc z u P) (subst_proc z u Q)
-  | par P Q => par (subst_proc z u P) (subst_proc z u Q)
-  | inact => inact
-  | nu_ch P => nu_ch (subst_proc z u P)
-  | bang P => bang (subst_proc z u P)
-  end.
+(* Fixpoint subst_proc (z : LC.atom) (u : channel) (P : proc) : proc := *)
+(*   match P with *)
+(*   | send k e P => send (subst_ch z u k) e (subst_proc z u P) *)
+(*   | receive k P => receive (subst_ch z u k) (subst_proc z u P) *)
+(*   | ife e P Q => ife e (subst_proc z u P) (subst_proc z u Q) *)
+(*   | par P Q => par (subst_proc z u P) (subst_proc z u Q) *)
+(*   | inact => inact *)
+(*   | nu_ch P => nu_ch (subst_proc z u P) *)
+(*   | bang P => bang (subst_proc z u P) *)
+(*   end. *)
 
 Definition subst_chk (z k' : CN.atom) (k : channel) : channel :=
   if k is Ch (CN.Free z', p)
@@ -1269,16 +1269,16 @@ Fixpoint subst_prock (z : CN.atom) (u : CN.atom) (P : proc) : proc :=
   | bang P => bang (subst_prock z u P)
   end.
 
-Fixpoint subst_ept (z : SC.atom) (u : SC.atom) (P : proc) : proc :=
-  match P with
-  | send k e P => send k e (subst_ept z u P)
-  | receive k P => receive k (subst_ept z u P)
-  | ife e P Q => ife e (subst_ept z u P) (subst_ept z u Q)
-  | par P Q => par (subst_ept z u P) (subst_ept z u Q)
-  | inact => inact
-  | nu_ch P => nu_ch (subst_ept z u P)
-  | bang P => bang (subst_ept z u P)
-  end.
+(* Fixpoint subst_ept (z : SC.atom) (u : SC.atom) (P : proc) : proc := *)
+(*   match P with *)
+(*   | send k e P => send k e (subst_ept z u P) *)
+(*   | receive k P => receive k (subst_ept z u P) *)
+(*   | ife e P Q => ife e (subst_ept z u P) (subst_ept z u Q) *)
+(*   | par P Q => par (subst_ept z u P) (subst_ept z u Q) *)
+(*   | inact => inact *)
+(*   | nu_ch P => nu_ch (subst_ept z u P) *)
+(*   | bang P => bang (subst_ept z u P) *)
+(*   end. *)
 
 Fixpoint subst_proc_exp (z : EV.atom) (e : exp) (P : proc) : proc :=
   match P with
@@ -1292,23 +1292,23 @@ Fixpoint subst_proc_exp (z : EV.atom) (e : exp) (P : proc) : proc :=
   end.
 
 (* Notation "s[ z ~> u ]n a" := (subst_nm z u a) (at level 68) : sr_scope. *)
-Notation "s[ z ~> u ]c k" := (subst_ch z u k) (at level 68) : sr_scope.
+(* Notation "s[ z ~> u ]c k" := (subst_ch z u k) (at level 68) : sr_scope. *)
 Notation "s[ z ~> u ]e e" := (subst_exp z u e) (at level 68) : sr_scope.
-Notation "s[ z ~> u ]p P" := (subst_proc z u P) (at level 68) : sr_scope.
+(* Notation "s[ z ~> u ]p P" := (subst_proc z u P) (at level 68) : sr_scope. *)
 Notation "s[ z ~> e ]pe P" := (subst_proc_exp z e P) (at level 68) : sr_scope.
 
-Lemma subst_ch_in_ch x u k:
-  s[ x ~> u ]c ch k = (ch k).
-Proof.
-  move: k.
-  by case.
-Qed.
+(* Lemma subst_ch_in_ch x u k: *)
+(*   s[ x ~> u ]c ch k = (ch k). *)
+(* Proof. *)
+(*   move: k. *)
+(*   by case. *)
+(* Qed. *)
 
-Definition fv_ch (k : channel) : seq LC.atom :=
-  match k with
-  | LC.Free a => [::a]
-  | _ => [::]
-  end.
+(* Definition fv_ch (k : channel) : seq LC.atom := *)
+(*   match k with *)
+(*   | LC.Free a => [::a] *)
+(*   | _ => [::] *)
+(*   end. *)
 
 Definition fv_exp (e : exp) : seq EV.atom :=
   match e with
@@ -1327,33 +1327,33 @@ Fixpoint fv_e (P : proc) : seq EV.atom :=
   | inact => [::]
   end.
 
-Fixpoint fv (P : proc) : seq LC.atom :=
-  match P with
-  | send k e P => fv_ch k ++ fv P
-  | receive k P => fv_ch k ++ fv P
-  | ife e P Q => fv P ++ fv Q
-  | par P Q => fv P ++ fv Q
-  | inact => [::]
-  | nu_ch P => fv P
-  | bang P => fv P
-  end.
+(* Fixpoint fv (P : proc) : seq LC.atom := *)
+(*   match P with *)
+(*   | send k e P => fv_ch k ++ fv P *)
+(*   | receive k P => fv_ch k ++ fv P *)
+(*   | ife e P Q => fv P ++ fv Q *)
+(*   | par P Q => fv P ++ fv Q *)
+(*   | inact => [::] *)
+(*   | nu_ch P => fv P *)
+(*   | bang P => fv P *)
+(*   end. *)
 
-Definition free_nm (a : SC.var) : seq SC.atom :=
-  match a with
-  | SC.Free v => [:: v]
-  | _ => [::]
-  end.
+(* Definition free_nm (a : SC.var) : seq SC.atom := *)
+(*   match a with *)
+(*   | SC.Free v => [:: v] *)
+(*   | _ => [::] *)
+(*   end. *)
 
-Fixpoint fn (P : proc) : seq SC.atom :=
-  match P with
-  | send _ _ P
-  | receive _ P
-  | nu_ch P => fn P
-  | ife _ P Q
-  | par P Q => fn P ++ fn Q
-  | inact => [::]
-  | bang P => fn P
-  end.
+(* Fixpoint fn (P : proc) : seq SC.atom := *)
+(*   match P with *)
+(*   | send _ _ P *)
+(*   | receive _ P *)
+(*   | nu_ch P => fn P *)
+(*   | ife _ P Q *)
+(*   | par P Q => fn P ++ fn Q *)
+(*   | inact => [::] *)
+(*   | bang P => fn P *)
+(*   end. *)
 
 Definition fv_k (k : channel) : seq CN.atom :=
   match k with
@@ -1372,44 +1372,44 @@ Fixpoint freev_k (P:proc) : seq CN.atom :=
   | bang P => freev_k P
   end.
 
-Lemma in_fvk_opc k n nc c :
-  k \notin fv_k nc -> (k \in fv_k (opc n nc c)) = (k \in fv_k c).
-Proof. by case: c=>//; case=>///=n0; case: ifP=>// _ /negPf->. Qed.
+(* Lemma in_fvk_opc k n nc c : *)
+(*   k \notin fv_k nc -> (k \in fv_k (opc n nc c)) = (k \in fv_k c). *)
+(* Proof. by case: c=>//; case=>///=n0; case: ifP=>// _ /negPf->. Qed. *)
 
 Lemma in_fvk_shift_ch k c :
   (k \notin fv_k c) = (k \notin fv_k (shift_ch c)).
 Proof. by case: c=>//[][[] p]. Qed.
 
-Lemma freek_openc k P nc:
-  k \notin fv_k nc ->
-  (k \in freev_k (open_c0 P nc)) = (k \in freev_k P).
-Proof.
-  move=> k_nc.
-  rewrite /open_c0; move: 0=> n.
-Admitted.
-(*   elim: P n nc k_nc *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] n nc k_nc /=//; *)
-(*   try (rewrite !mem_cat ?inE =>//); *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (rewrite !orbA =>//); *)
-(*   try (rewrite !in_fvk_opc =>//); *)
-(*   try (rewrite -!in_fvk_shift_ch =>//). *)
-(* Qed. *)
+(* Lemma freek_openc k P nc: *)
+(*   k \notin fv_k nc -> *)
+(*   (k \in freev_k (open_c0 P nc)) = (k \in freev_k P). *)
+(* Proof. *)
+(*   move=> k_nc. *)
+(*   rewrite /open_c0; move: 0=> n. *)
+(* Admitted. *)
+(* (*   elim: P n nc k_nc *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] n nc k_nc /=//; *) *)
+(* (*   try (rewrite !mem_cat ?inE =>//); *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//); *) *)
+(* (*   try (rewrite !orbA =>//); *) *)
+(* (*   try (rewrite !in_fvk_opc =>//); *) *)
+(* (*   try (rewrite -!in_fvk_shift_ch =>//). *) *)
+(* (* Qed. *) *)
 
 Lemma freek_opene k P nc:
   (k \in freev_k (open_e0 P nc)) = (k \in freev_k P).
@@ -1437,31 +1437,31 @@ Proof. Admitted.
 (*   try (rewrite !orbA =>//). *)
 (* Qed. *)
 
-Lemma freek_openn k P nc:
-  (k \in freev_k (open_n0 P nc)) = (k \in freev_k P).
-Proof. Admitted.
-(*   rewrite /open_n0; move: 0=> n. *)
-(*   elim: P n nc *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] n nc /=//; *)
-(*   try (rewrite !mem_cat ?inE =>//); *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (rewrite !orbA =>//). *)
-(* Qed. *)
+(* Lemma freek_openn k P nc: *)
+(*   (k \in freev_k (open_n0 P nc)) = (k \in freev_k P). *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_n0; move: 0=> n. *) *)
+(* (*   elim: P n nc *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] n nc /=//; *) *)
+(* (*   try (rewrite !mem_cat ?inE =>//); *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//); *) *)
+(* (*   try (rewrite !orbA =>//). *) *)
+(* (* Qed. *) *)
 
 Lemma fvk_opk k n nc c :
   nc != CN.Free k -> (k \in fv_k (opk n nc c)) = (k \in fv_k c).
@@ -1577,51 +1577,51 @@ Proof. Admitted.
 (*   easy. *)
 (* Qed. *)
 
-Lemma fve_openc P k : fv_e (open_c0 P k) = fv_e P.
-Proof. Admitted.
-(*   rewrite /open_c0; move:0. *)
-(*   elim: P k *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//). *)
-(* Qed. *)
+(* Lemma fve_openc P k : fv_e (open_c0 P k) = fv_e P. *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_c0; move:0. *) *)
+(* (*   elim: P k *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//). *) *)
+(* (* Qed. *) *)
 
-Lemma fve_openn P k : fv_e (open_n0 P k) = fv_e P.
-Proof. Admitted.
-(*   rewrite /open_n0; move:0. *)
-(*   elim: P k *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//). *)
-(* Qed. *)
+(* Lemma fve_openn P k : fv_e (open_n0 P k) = fv_e P. *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_n0; move:0. *) *)
+(* (*   elim: P k *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//). *) *)
+(* (* Qed. *) *)
 
 Lemma fve_openk P k : fv_e (open_k0 P k) = fv_e P.
 Proof. Admitted.
@@ -1681,43 +1681,43 @@ Proof. Admitted.
 (*   try (rewrite fvexp_ope=>//). *)
 (* Qed. *)
 
-Lemma subst_opc x k c n : x \notin fv_ch c -> s[ x ~> k ]c opc n x c = opc n k c.
-Proof.
-  case: c=>[[a b]|[a|m _]]/=//; rewrite /subst_ch eq_sym.
-  + by rewrite -[Var _ == _]/(x == a) in_cons negb_or => /andP-[/negPf->].
-  + by case: (ifP (n == m))=>//; rewrite eq_refl.
-Qed.
-
-Lemma subst_proc_open x k P :
-  lc_ch k ->
-  x \notin fv P -> s[ x ~> k ]p (open_c0 P x) = {op 0 ~> k} P.
-Proof. Admitted.
-(*   move=> lc_k; rewrite /open_c0; move: 0. *)
-(*   elim: P *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] n /=//; *)
-(*   try (rewrite !mem_cat !negb_or); *)
-(*   try (move => /andP-[nin1 /andP-[nin2 nin3]]); *)
-(*   try (move => /andP-[nin1 nin2]); *)
-(*   try (move => nin); *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (rewrite !shift_ch_lc=>//); *)
-(*   try (rewrite !subst_opc=>//). *)
+(* Lemma subst_opc x k c n : x \notin fv_ch c -> s[ x ~> k ]c opc n x c = opc n k c. *)
+(* Proof. *)
+(*   case: c=>[[a b]|[a|m _]]/=//; rewrite /subst_ch eq_sym. *)
+(*   + by rewrite -[Var _ == _]/(x == a) in_cons negb_or => /andP-[/negPf->]. *)
+(*   + by case: (ifP (n == m))=>//; rewrite eq_refl. *)
 (* Qed. *)
+
+(* Lemma subst_proc_open x k P : *)
+(*   lc_ch k -> *)
+(*   x \notin fv P -> s[ x ~> k ]p (open_c0 P x) = {op 0 ~> k} P. *)
+(* Proof. Admitted. *)
+(* (*   move=> lc_k; rewrite /open_c0; move: 0. *) *)
+(* (*   elim: P *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] n /=//; *) *)
+(* (*   try (rewrite !mem_cat !negb_or); *) *)
+(* (*   try (move => /andP-[nin1 /andP-[nin2 nin3]]); *) *)
+(* (*   try (move => /andP-[nin1 nin2]); *) *)
+(* (*   try (move => nin); *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//); *) *)
+(* (*   try (rewrite !shift_ch_lc=>//); *) *)
+(* (*   try (rewrite !subst_opc=>//). *) *)
+(* (* Qed. *) *)
 
 Lemma subst_chk_opk x k n c :
   x \notin fv_k c -> subst_chk x k (opk n x c) = opk n k c.
@@ -1757,106 +1757,106 @@ Proof. Admitted.
 (*   try (rewrite !subst_chk_opk=>//). *)
 (* Qed. *)
 
-Lemma openc_subst_ept a a' k P :
-  open_c0 (subst_ept a a' P) k = subst_ept a a' (open_c0 P k).
-Proof. Admitted.
-(*   rewrite /open_c0; move: 0. *)
-(*   elim: P k *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//). *)
-(* Qed. *)
+(* Lemma openc_subst_ept a a' k P : *)
+(*   open_c0 (subst_ept a a' P) k = subst_ept a a' (open_c0 P k). *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_c0; move: 0. *) *)
+(* (*   elim: P k *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//). *) *)
+(* (* Qed. *) *)
 
-Lemma opene_subst_ept a a' k P :
-  open_e0 (subst_ept a a' P) k = subst_ept a a' (open_e0 P k).
-Proof. Admitted.
-(*   rewrite /open_e0; move: 0. *)
-(*   elim: P k *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//). *)
-(* Qed. *)
+(* Lemma opene_subst_ept a a' k P : *)
+(*   open_e0 (subst_ept a a' P) k = subst_ept a a' (open_e0 P k). *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_e0; move: 0. *) *)
+(* (*   elim: P k *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//). *) *)
+(* (* Qed. *) *)
 
-Lemma openk_subst_ept a a' k P :
-  open_k0 (subst_ept a a' P) k = subst_ept a a' (open_k0 P k).
-Proof. Admitted.
-(*   rewrite /open_k0; move: 0. *)
-(*   elim: P k *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//). *)
-(* Qed. *)
+(* Lemma openk_subst_ept a a' k P : *)
+(*   open_k0 (subst_ept a a' P) k = subst_ept a a' (open_k0 P k). *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_k0; move: 0. *) *)
+(* (*   elim: P k *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//). *) *)
+(* (* Qed. *) *)
 
-Lemma openn_subst_ept a a' k P :
-  k != a ->
-  open_n0 (subst_ept a a' P) k = subst_ept a a' (open_n0 P k).
-Proof. Admitted.
-(*   move=> k_a; rewrite /open_n0; move: 0. *)
-(*   elim: P k k_a *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k k_a n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (case: ifP=>[/eqP->|]/=; first (by rewrite eq_refl); *)
-(*     case: v=>/=[a0->|n0]//; case: ifP=>[/eqP->|]; *)
-(*     first (by rewrite -[SC.Free _ == _]/(k == a) (negPf k_a)); *)
-(*     move=>_-> //). *)
-(* Qed. *)
+(* Lemma openn_subst_ept a a' k P : *)
+(*   k != a -> *)
+(*   open_n0 (subst_ept a a' P) k = subst_ept a a' (open_n0 P k). *)
+(* Proof. Admitted. *)
+(* (*   move=> k_a; rewrite /open_n0; move: 0. *) *)
+(* (*   elim: P k k_a *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k k_a n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//); *) *)
+(* (*   try (case: ifP=>[/eqP->|]/=; first (by rewrite eq_refl); *) *)
+(* (*     case: v=>/=[a0->|n0]//; case: ifP=>[/eqP->|]; *) *)
+(* (*     first (by rewrite -[SC.Free _ == _]/(k == a) (negPf k_a)); *) *)
+(* (*     move=>_-> //). *) *)
+(* (* Qed. *) *)
 
 Lemma opk_substk (a a' : CN.atom) k n c :
   k != a ->
@@ -1916,67 +1916,67 @@ Proof. Admitted.
 (*   try (rewrite !opk_substk=>//). *)
 (* Qed. *)
 
-Lemma openn_substk a a' k P :
-  open_n0 (subst_prock a a' P) k = subst_prock a a' (open_n0 P k).
-Proof. Admitted.
-(*   rewrite /open_n0; move: 0. *)
-(*   elim: P k *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (rewrite !opk_substk=>//). *)
+(* Lemma openn_substk a a' k P : *)
+(*   open_n0 (subst_prock a a' P) k = subst_prock a a' (open_n0 P k). *)
+(* Proof. Admitted. *)
+(* (*   rewrite /open_n0; move: 0. *) *)
+(* (*   elim: P k *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//); *) *)
+(* (*   try (rewrite !opk_substk=>//). *) *)
+(* (* Qed. *) *)
+
+(* Lemma opc_substk (a a' : CN.atom) k n c : *)
+(*   a \notin fv_k k -> *)
+(*   opc n k (subst_chk a a' c) = subst_chk a a' (opc n k c). *)
+(* Proof. *)
+(*   case: c=>[[[ka|kn] kp]|cn]/=//; first by case: ifP. *)
+(*   case: cn=>//m/=; case: ifP=>//; case: k=>//[][[kb|km] pb]///=. *)
+(*   by rewrite in_cons negb_or =>_ /andP-[/negPf->]. *)
 (* Qed. *)
 
-Lemma opc_substk (a a' : CN.atom) k n c :
-  a \notin fv_k k ->
-  opc n k (subst_chk a a' c) = subst_chk a a' (opc n k c).
-Proof.
-  case: c=>[[[ka|kn] kp]|cn]/=//; first by case: ifP.
-  case: cn=>//m/=; case: ifP=>//; case: k=>//[][[kb|km] pb]///=.
-  by rewrite in_cons negb_or =>_ /andP-[/negPf->].
-Qed.
-
-Lemma openc_substk a a' k P :
-  a \notin fv_k k ->
-  open_c0 (subst_prock a a' P) k = subst_prock a a' (open_c0 P k).
-Proof. Admitted.
-(*   move=> k_a; rewrite /open_c0; move: 0. *)
-(*   elim: P k k_a *)
-(*   => [ v p IH *)
-(*      | v p IH *)
-(*      | c e p IH *)
-(*      | c p IH *)
-(*      | c l p IH *)
-(*      | c p1 IH1 p2 IH2 *)
-(*      | c1 c2 p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH *)
-(*      | p IH] k k_a n /=//; *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (rewrite !opc_substk=>//). *)
-(*   move: k k_a => {IH} {n} {p} {a'}. (*FIXME: define as lemma*) *)
-(*   by do ! case=>//. *)
-(* Qed. *)
+(* Lemma openc_substk a a' k P : *)
+(*   a \notin fv_k k -> *)
+(*   open_c0 (subst_prock a a' P) k = subst_prock a a' (open_c0 P k). *)
+(* Proof. Admitted. *)
+(* (*   move=> k_a; rewrite /open_c0; move: 0. *) *)
+(* (*   elim: P k k_a *) *)
+(* (*   => [ v p IH *) *)
+(* (*      | v p IH *) *)
+(* (*      | c e p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | c l p IH *) *)
+(* (*      | c p1 IH1 p2 IH2 *) *)
+(* (*      | c1 c2 p IH *) *)
+(* (*      | c p IH *) *)
+(* (*      | e p1 IH1 p2 IH2 *) *)
+(* (*      | p1 IH1 p2 IH2 *) *)
+(* (*      | *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH *) *)
+(* (*      | p IH] k k_a n /=//; *) *)
+(* (*   try (rewrite IH =>//); *) *)
+(* (*   try (rewrite IH1 =>//); *) *)
+(* (*   try (rewrite IH2 =>//); *) *)
+(* (*   try (rewrite !opc_substk=>//). *) *)
+(* (*   move: k k_a => {IH} {n} {p} {a'}. (*FIXME: define as lemma*) *) *)
+(* (*   by do ! case=>//. *) *)
+(* (* Qed. *) *)
 
 Lemma substchk_same k c : subst_chk k k c = c.
 Proof.
@@ -2038,7 +2038,7 @@ where "P === Q" := (congruent P Q).
 Reserved Notation "P --> Q" (at level 70).
 Inductive red : proc -> proc -> Prop :=
 | r_com (k : CN.atom) p pd e P Q:
-    lc P -> body Q -> dual_pol p == pd -> (* use open_e instead of ope *)
+    lc P -> (*body Q ->*) dual_pol p == pd -> (* use open_e instead of ope *)
     (par (send (ch (k, p)) e P) (receive (ch (k, pd)) Q)) --> (par P ({ope 0 ~> e} Q))
 
 | r_cong P P' Q Q' :
