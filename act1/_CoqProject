@@ -8,4 +8,3 @@ theories/AtomScopes.v
 theories/Env.v
 theories/Syntax.v
 theories/Types.v
-theories/Safety.v
