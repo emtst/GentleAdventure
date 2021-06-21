@@ -1565,3 +1565,228 @@ Section IProject.
   Qed.*)
 
 End IProject.
+
+Section GTree.
+
+  CoInductive rg_ty :=
+  | rg_end
+  | rg_msg (FROM TO : role)
+           (CONT : mty * rg_ty).
+
+  Unset Elimination Schemes.
+  Inductive ig_ty :=
+  | ig_end (CONT : rg_ty)
+  | ig_msg (ST : option lbl)
+           (FROM TO : role)
+           (CONT : mty * ig_ty).
+  Set Elimination Schemes.
+
+  (*Definition P_option A (P : A -> Type) (C : option A) : Type :=
+    match C with
+    | Some X => P X
+    | None => True
+    end.*)
+
+  (*Definition P_prod A B (P : B -> Type) (C : A * B) : Type :=
+    match C with
+    | (X, Y)=> P Y
+    end.*)
+
+  Lemma ig_ty_ind
+        (P : ig_ty -> Prop)
+        (P_end : forall CONT, P (ig_end CONT))
+        (P_msg : (forall ST FROM TO CONT,
+                     P CONT.2 -> P (ig_msg ST FROM TO CONT)))
+    : forall G, P G.
+  Proof.
+    fix Ih 1; case.
+    - by apply: P_end.
+    - move=> ST F T C; apply: P_msg.
+        by apply Ih.
+  Qed.
+
+  Lemma ig_ty_rect
+      (P : ig_ty -> Type)
+      (P_end : forall CONT, P (ig_end CONT))
+      (P_msg : (forall ST FROM TO CONT,
+                   P CONT.2 -> P (ig_msg ST FROM TO CONT)))
+  : forall G, P G.
+  Proof.
+    fix Ih 1; case.
+    - by apply: P_end.
+    - move=> ST F T C; apply: P_msg.
+      by apply Ih.
+  Qed.
+
+  Inductive part_of: role -> rg_ty -> Prop :=
+  | pof_from F T C: part_of F (rg_msg F T C)
+  | pof_to F T C: part_of T (rg_msg F T C)
+  | pof_cont p F T C: part_of p C.2 -> part_of p (rg_msg F T C).
+
+(*Inductive part_of_all: role -> rg_ty -> Prop :=
+  | pall_from F T C: part_of_all F (rg_msg F T C)
+  | pall_to F T C: part_of_all T (rg_msg F T C)
+  | pall_cont p F T C :
+      P_all (part_of_all p) C -> part_of_all p (rg_msg F T C).
+
+(* Needed to build the next global type in a step  *)
+Inductive part_of_allT: role -> rg_ty -> Type :=
+  | pallT_from F T C: part_of_allT F (rg_msg F T C)
+  | pallT_to F T C: part_of_allT T (rg_msg F T C)
+  | pallT_cont p F T C :
+      (forall l Ty G, C l = Some (Ty, G) -> part_of_allT p G) ->
+      part_of_allT p (rg_msg F T C).*)
+
+  Inductive iPart_of: role -> ig_ty -> Prop :=
+  | ipof_end p cG: part_of p cG -> iPart_of p (ig_end cG)
+  | ipof_from F T C: iPart_of F (ig_msg None F T C)
+  | ipof_to o F T C: iPart_of T (ig_msg o F T C)
+  | ipof_cont p o F T C: iPart_of p C.2 -> iPart_of p (ig_msg o F T C).
+
+  Lemma rgend_part p G : part_of p G -> G = rg_end -> False.
+  Proof. by move=>[]. Qed.
+
+  (*Lemma pall_inv F T C G p :
+    part_of_all p G -> G = rg_msg F T C -> F <> p -> T <> p ->
+    (forall l Ty G, C l = Some (Ty, G) -> part_of_all p G).
+  Proof.
+    by move=>[ F' T' C' [->]//
+             | F' T' C' [_ ->]//
+             |{}p F' T' C' ALL [_ _ <-] _ _ l Ty {}G /ALL
+             ].
+Defined.*)
+
+(*Fixpoint find_partsc p G (H : part_of_all p G) {struct H}
+  : part_of_allT p G
+  :=
+  match G as G0 return G = G0 -> part_of_allT p G0 with
+  | rg_msg F T C => fun EQ =>
+                      match @eqP _ F p with
+                      | ReflectT pF => match EQ, pF with
+                                       | erefl, erefl => pallT_from F T C
+                                       end
+                      | ReflectF pF =>
+                        match @eqP _ T p with
+                        | ReflectT pT => match EQ, pT with
+                                         | erefl, erefl => pallT_to F T C
+                                         end
+                        | ReflectF pT =>
+                          pallT_cont F T
+                                     (fun l Ty G Cl =>
+                                        find_partsc (pall_inv H EQ pF pT Cl))
+                        end
+                      end
+  | rg_end => fun E => match rgend_part H E with end
+  end erefl.*)
+
+  Definition rg_unr (G : rg_ty) : ig_ty :=
+    match G with
+    | rg_msg F T C => ig_msg None F T (C.1, ig_end C.2)
+    | rg_end => ig_end rg_end
+    end.
+
+End GTree.
+
+Section LTree.
+
+  CoInductive rl_ty :=
+  | rl_end
+  | rl_msg (a : l_act) (R : role) (C : (mty * rl_ty))
+  .
+
+  Definition rlty_rel := rl_ty -> rl_ty -> Prop.
+  Inductive EqL_ (r : rlty_rel) : rlty_rel :=
+  | el_end : @EqL_ r rl_end rl_end
+  | el_msg a p C1 C2 : r C1.2 C2.2 ->
+                       @EqL_ r (rl_msg a p C1) (rl_msg a p C2).
+  Hint Constructors EqL_.
+  Definition EqL L1 L2 := paco2 EqL_ bot2 L1 L2.
+  Derive Inversion EqL__inv with (forall r L0 L1, EqL_ r L0 L1) Sort Prop.
+
+  Lemma EqL_monotone : monotone2 EqL_.
+  Proof.
+    move=>L1 L2 r r' E H; elim: E =>[|a p C1 C2 ]//; constructor=>//.
+      by apply H.
+  Qed.
+  Hint Resolve EqL_monotone.
+
+  Lemma EqL_refl CL : EqL CL CL.
+  Proof.
+    move: CL {-1 3}CL (erefl CL).
+    apply/paco2_acc=> r0 _ CIH CL CL'<- {CL'}.
+    apply/paco2_fold.
+    case: CL=>//a R C; constructor; right.
+    by apply CIH.
+  Qed.
+
+  Lemma EqL_sym CL1 CL2 : EqL CL1 CL2 -> EqL CL2 CL1.
+  Proof.
+    move: CL2 CL1; apply/paco2_acc=>r0 _ CIh L0 L1.
+    move=>/(paco2_unfold EqL_monotone); elim/EqL__inv=>// _.
+    + by move=> _ _; apply/paco2_fold; constructor.
+    + move=> a p C1 C2 []hp _ _ //=; apply/paco2_fold; constructor.
+      by right; apply CIh.
+  Qed.
+
+  Lemma EqL_r_end_inv_aux lT lT':
+    EqL lT lT' -> lT' = rl_end -> lT = rl_end.
+  Proof.
+      by move=> hp; punfold hp; move: hp => [] //=.
+  Qed.
+
+  Lemma EqL_r_end_inv lT:
+    EqL lT rl_end -> lT = rl_end.
+  Proof.
+      by move=> hp; apply (EqL_r_end_inv_aux hp).
+  Qed.
+
+  Lemma EqL_r_msg_inv_aux lT lT' a p C':
+    EqL lT lT' -> lT' = rl_msg a p C' ->
+    exists C, EqL C.2 C'.2 /\ lT = rl_msg a p C.
+  Proof.
+    move=> hp; punfold hp; move: hp=>[] //=.
+    move=> a0 p0 C1 C2 []//= eql [eq1 eq2 eq3].
+    by exists C1; rewrite eq1 eq2 -eq3.
+  Qed.
+
+  Lemma EqL_r_msg_inv a p C' lT:
+    EqL lT (rl_msg a p C') ->
+    exists C, EqL C.2 C'.2 /\ lT = rl_msg a p C.
+  Proof.
+      by move=> hp; apply: (EqL_r_msg_inv_aux hp).
+  Qed.
+
+
+  Lemma EqL_l_msg_inv_aux lT lT' a p C:
+    EqL lT lT' -> lT = rl_msg a p C ->
+    exists C', EqL C.2 C'.2 /\ lT' = rl_msg a p C'.
+  Proof.
+    move=> hp; punfold hp; move: hp => [] //=.
+    move=> a0 p0 C1 C2 []//= eql [eq1 eq2 eq3].
+    by exists C2; rewrite eq1 eq2 -eq3.
+  Qed.
+
+  Lemma EqL_l_msg_inv a p C lT':
+    EqL (rl_msg a p C) lT' ->
+  exists C', EqL C.2 C'.2 /\ lT' = rl_msg a p C'.
+  Proof.
+      by move=> hp; apply: (EqL_l_msg_inv_aux hp).
+  Qed.
+
+  Lemma EqL_trans lT1 lT2 lT3:
+    EqL lT1 lT2 -> EqL lT2 lT3 -> EqL lT1 lT3.
+  Proof.
+    move=> hp1 hp2; move: (conj hp1 hp2) => {hp1 hp2}.
+    move=> /(ex_intro (fun lT=> _) lT2) {lT2}; move: lT1 lT3.
+    apply /paco2_acc; move=> r0 _ CIH lT1 lT3; elim=> lT2 [].
+    case: lT3 =>//=.
+    + move=> eql12 eql23; move: (EqL_r_end_inv eql23) eql12 =>->.
+      move=> eql12; move: (EqL_r_end_inv eql12) =>->.
+        by apply /paco2_fold; apply el_end.
+    + move=> a r C3 eql12 eql23; move: (EqL_r_msg_inv eql23)=>[C2 [eqlC23 lT2eq]].
+      move: eql12; rewrite lT2eq=> eql12.
+      move: (EqL_r_msg_inv eql12)=>[C1 [eqlC12 lT1eq]]; rewrite lT1eq.
+      by apply /paco2_fold; apply el_msg; right; apply CIH; exists C2.2.
+Qed.
+
+End LTree.
