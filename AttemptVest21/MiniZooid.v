@@ -1685,6 +1685,150 @@ Defined.*)
     | rg_end => ig_end rg_end
     end.
 
+  Definition grel := g_ty -> rg_ty -> Prop.
+  Inductive g_unroll (r : grel) : grel :=
+  | gu_end :
+      g_unroll r g_end rg_end
+  | gu_rec IG CG :
+      r (g_open 0 (g_rec IG) IG) CG ->
+      g_unroll r (g_rec IG) CG
+  | gu_msg FROM TO t IG' CG':
+      r IG' CG' ->
+      g_unroll r (g_msg FROM TO (t,IG')) (rg_msg FROM TO (t,CG')).
+  Definition GUnroll IG CG : Prop := paco2 g_unroll bot2 IG CG.
+
+  Derive Inversion gunr_inv with (forall r G cG, g_unroll r G cG) Sort Prop.
+  Hint Constructors g_unroll.
+
+  Lemma gunroll_monotone : monotone2 g_unroll.
+  Proof.
+    move=> IG CG r r' U H; move: IG CG U.
+    elim=>[|V|G IH|F T C IH] CG;
+            case E:_ _/ =>[|G' CG' R|F' T' C' CC DOM U]//.
+    - by move: E R=>[<-]{G'} /H; constructor.
+    - by constructor=>//; apply H.
+  Qed.
+  Hint Resolve gunroll_monotone.
+
+  Lemma gunroll_unfold r iG cG
+    : paco2 g_unroll r iG cG -> @g_unroll (upaco2 g_unroll r) iG cG.
+  Proof. by move/(paco2_unfold gunroll_monotone). Qed.
+
+  Lemma g_unroll_rec (r : grel) n iG cG :
+    (forall n IG CG, r IG CG -> paco2 g_unroll r (n_unroll n IG) CG) ->
+    paco2 g_unroll r iG cG <-> paco2 g_unroll r (n_unroll n iG) cG.
+  Proof.
+    move=> H; split.
+    - elim: n =>// n Ih in iG cG *.
+      move=> /gunroll_unfold-[]//=.
+      + by apply/paco2_fold.
+      + by move=>IG CG  [/Ih//|/H].
+      + by move=>F T IC CC DOM UA; apply/paco2_fold; constructor.
+    - elim: n =>// n Ih in iG cG *.
+        by case: iG=>//= G H1; apply/paco2_fold; constructor; left; apply/Ih.
+  Qed.
+
+  Lemma GUnroll_ind n iG cG :
+    GUnroll iG cG <-> GUnroll (n_unroll n iG) cG.
+  Proof. by apply/g_unroll_rec. Qed.
+
+  Lemma gen2 A B (x' : A) (y' : B) Q P :
+    (forall x y, Q x y -> x = x' -> y = y' -> P) ->
+    Q x' y' -> P.
+  Proof. by move=>H /H/( _ erefl erefl).  Qed.
+
+  Lemma r_in_unroll_msg r G p q K :
+    GUnroll G (rg_msg p q K) ->
+    guarded 0 G ->
+    g_closed G ->
+    (r == p) || (r == q) ->
+    r \in participants G.
+  Proof.
+    move=> GU GG CG r_pq; apply/(r_in_unroll_rec_depth).
+    move: (unroll_guarded CG GG) r_pq => H.
+    move: GU=>/(GUnroll_ind (rec_depth G)); move: H.
+    move: (n_unroll _ G) => [|v|G'|p' q' Ks'].
+    - by move=>_; apply: gen2=>iG cG /gunroll_unfold-[].
+    - by move=>_; apply: gen2=>iG cG /gunroll_unfold-[].
+    - by move=>/(_ G')/eqP.
+    - move=>_; apply: gen2=>iG cG /gunroll_unfold-[]//.
+      move=>F T t IG' CG' []//= GU [<-<-<-] [<-<- _]; rewrite !in_cons.
+      by case: eqP=>//= _ ->.
+  Qed.
+
+  Lemma g_closed_unroll n iG : g_closed iG -> g_closed (n_unroll n iG).
+  Proof. by elim: n iG=>[|n Ih]//=; case=>//= iG /gopen_closed/Ih. Qed.
+
+  Lemma g_guarded_unroll iG :
+    g_closed (g_rec iG) -> guarded 0 (g_rec iG) -> guarded 0 (unroll iG).
+  Proof.
+    move=> C GG; have GG': (guarded 1 iG) by move:GG C=>/=; case: iG.
+    move: (guarded_open 0 GG C GG')=>/guarded_depth_gt.
+      by move=>/(_ _ _ (leq0n 1) (gopen_closed C)).
+  Qed.
+
+  Lemma g_guarded_nunroll n iG
+    : g_closed iG -> guarded 0 iG -> guarded 0 (n_unroll n iG).
+  Proof.
+    elim: n iG=>[|n Ih]//;case=>// iG CG /(g_guarded_unroll CG)/Ih-H/=.
+      by apply/H/gopen_closed.
+  Qed.
+
+  CoFixpoint g_expand (g : g_ty) : rg_ty :=
+    match n_unroll (rec_depth g) g with
+    | g_msg F T K => rg_msg F T (K.1, g_expand K.2)
+    | _ => rg_end
+    end.
+
+  Lemma rgtyU G : G = match G with
+                      | rg_msg F T C => rg_msg F T C
+                      | rg_end => rg_end
+                      end.
+  Proof. by case: G. Qed.
+
+  Definition g_expand' G :=
+    match G with
+    | g_msg F T K => rg_msg F T (K.1, g_expand K.2)
+    | _ => rg_end
+    end.
+
+  Lemma g_expand_once G : g_expand G = g_expand' (n_unroll (rec_depth G) G).
+  Proof.
+      by rewrite (rgtyU (g_expand _))/g_expand /g_expand'-rgtyU-/g_expand.
+  Qed.
+
+  Lemma g_expand_unr G :
+    guarded 0 G ->
+    g_closed G ->
+    GUnroll G (g_expand G).
+  Proof.
+    move=>gG cG; rewrite g_expand_once.
+    move: {-1}(g_expand' _) (erefl (g_expand' (n_unroll (rec_depth G) G))).
+    move=>CG ECG; move: G CG {ECG gG cG}(conj ECG (conj gG cG)).
+    apply/paco2_acc=>r _ /(_ _ _ (conj erefl (conj _ _)))-CIH.
+    move=> G CG [<-]{CG} [gG cG]; case: G cG gG.
+    - by move=>_ _ /=; apply/paco2_fold; constructor.
+    - by move=>V /closed_not_var/(_ V)/eqP/(_ erefl).
+    - move=>G cG gG /=;apply/paco2_fold.
+      constructor; right; have gG': guarded 1 G by move: gG.
+      rewrite (guarded_recdepth (m:=0) gG' _ (g_rec G)) //.
+      apply/CIH; [by apply/g_guarded_unroll|by apply/gopen_closed].
+    - move=>F T C//= cG gG; apply/paco2_fold.
+      rewrite (surjective_pairing C); constructor; right.
+      by rewrite g_expand_once; apply CIH.
+  Qed.
+
+  Lemma expand_g_end g
+    : is_end g -> g_expand g = rg_end.
+  Proof.
+    rewrite (rgtyU (g_expand _))/=.
+    suff: is_end g -> n_unroll (rec_depth g) g = g_end by move=>E /E->.
+    move: {-1}(rec_depth g) (erefl (rec_depth g))=> n.
+    elim: n g; first by case=>//.
+    move=>n Ih; case=>//= g [] RD END; move: (recdepth_unroll END) RD=>->{}RD.
+      by move: END=>/isend_unroll; apply/Ih.
+  Qed.
+
 End GTree.
 
 Section LTree.
@@ -1697,8 +1841,8 @@ Section LTree.
   Definition rlty_rel := rl_ty -> rl_ty -> Prop.
   Inductive EqL_ (r : rlty_rel) : rlty_rel :=
   | el_end : @EqL_ r rl_end rl_end
-  | el_msg a p C1 C2 : r C1.2 C2.2 ->
-                       @EqL_ r (rl_msg a p C1) (rl_msg a p C2).
+  | el_msg a p t C1 C2 : r C1 C2 ->
+                       @EqL_ r (rl_msg a p (t,C1)) (rl_msg a p (t,C2)).
   Hint Constructors EqL_.
   Definition EqL L1 L2 := paco2 EqL_ bot2 L1 L2.
   Derive Inversion EqL__inv with (forall r L0 L1, EqL_ r L0 L1) Sort Prop.
@@ -1715,7 +1859,7 @@ Section LTree.
     move: CL {-1 3}CL (erefl CL).
     apply/paco2_acc=> r0 _ CIH CL CL'<- {CL'}.
     apply/paco2_fold.
-    case: CL=>//a R C; constructor; right.
+    case: CL=>//a R C; rewrite (surjective_pairing C); constructor; right.
     by apply CIH.
   Qed.
 
@@ -1724,7 +1868,7 @@ Section LTree.
     move: CL2 CL1; apply/paco2_acc=>r0 _ CIh L0 L1.
     move=>/(paco2_unfold EqL_monotone); elim/EqL__inv=>// _.
     + by move=> _ _; apply/paco2_fold; constructor.
-    + move=> a p C1 C2 []hp _ _ //=; apply/paco2_fold; constructor.
+    + move=> a p t C1 C2 []hp _ _ //=; apply/paco2_fold; constructor.
       by right; apply CIh.
   Qed.
 
@@ -1742,33 +1886,32 @@ Section LTree.
 
   Lemma EqL_r_msg_inv_aux lT lT' a p C':
     EqL lT lT' -> lT' = rl_msg a p C' ->
-    exists C, EqL C.2 C'.2 /\ lT = rl_msg a p C.
+    exists C, C.1 = C'.1 /\ EqL C.2 C'.2 /\ lT = rl_msg a p C.
   Proof.
     move=> hp; punfold hp; move: hp=>[] //=.
-    move=> a0 p0 C1 C2 []//= eql [eq1 eq2 eq3].
-    by exists C1; rewrite eq1 eq2 -eq3.
+    move=> a0 p0 t C1 C2 []//= eql [eq1 eq2 eq3].
+    by exists (t,C1); rewrite eq1 eq2 -eq3.
   Qed.
 
   Lemma EqL_r_msg_inv a p C' lT:
     EqL lT (rl_msg a p C') ->
-    exists C, EqL C.2 C'.2 /\ lT = rl_msg a p C.
+    exists C, C.1 = C'.1 /\ EqL C.2 C'.2 /\ lT = rl_msg a p C.
   Proof.
       by move=> hp; apply: (EqL_r_msg_inv_aux hp).
   Qed.
 
-
   Lemma EqL_l_msg_inv_aux lT lT' a p C:
     EqL lT lT' -> lT = rl_msg a p C ->
-    exists C', EqL C.2 C'.2 /\ lT' = rl_msg a p C'.
+    exists C',  C.1 = C'.1 /\ EqL C.2 C'.2 /\ lT' = rl_msg a p C'.
   Proof.
     move=> hp; punfold hp; move: hp => [] //=.
-    move=> a0 p0 C1 C2 []//= eql [eq1 eq2 eq3].
-    by exists C2; rewrite eq1 eq2 -eq3.
+    move=> a0 p0 t C1 C2 []//= eql [eq1 eq2 eq3].
+    by exists (t,C2); rewrite eq1 eq2 -eq3.
   Qed.
 
   Lemma EqL_l_msg_inv a p C lT':
     EqL (rl_msg a p C) lT' ->
-  exists C', EqL C.2 C'.2 /\ lT' = rl_msg a p C'.
+  exists C',  C.1 = C'.1 /\ EqL C.2 C'.2 /\ lT' = rl_msg a p C'.
   Proof.
       by move=> hp; apply: (EqL_l_msg_inv_aux hp).
   Qed.
@@ -1783,10 +1926,227 @@ Section LTree.
     + move=> eql12 eql23; move: (EqL_r_end_inv eql23) eql12 =>->.
       move=> eql12; move: (EqL_r_end_inv eql12) =>->.
         by apply /paco2_fold; apply el_end.
-    + move=> a r C3 eql12 eql23; move: (EqL_r_msg_inv eql23)=>[C2 [eqlC23 lT2eq]].
+    + move=> a r C3 eql12 eql23; move: (EqL_r_msg_inv eql23)=>[C2 [eqC23 [eqlC23 lT2eq]]].
       move: eql12; rewrite lT2eq=> eql12.
-      move: (EqL_r_msg_inv eql12)=>[C1 [eqlC12 lT1eq]]; rewrite lT1eq.
-      by apply /paco2_fold; apply el_msg; right; apply CIH; exists C2.2.
-Qed.
+      move: (EqL_r_msg_inv eql12)=>[C1 [eqC12 [eqlC12 lT1eq]]]; rewrite lT1eq.
+      apply /paco2_fold; rewrite (surjective_pairing C1) (surjective_pairing C3) eqC12 eqC23.
+      by apply el_msg; right; apply CIH; exists C2.2.
+  Qed.
+
+
+  Definition lty_rel := rel2 l_ty (fun=>rl_ty).
+  Inductive l_unroll (r : lty_rel) : l_ty -> rl_ty -> Prop :=
+  | lu_end :
+      @l_unroll r l_end rl_end
+  | lu_rec G G' :
+      r (l_open 0 (l_rec G) G) G' ->
+      @l_unroll r (l_rec G) G'
+  | lu_msg a p t K C :
+      r K C ->
+      @l_unroll r (l_msg a p (t,K)) (rl_msg a p (t,C))
+  .
+  Hint Constructors l_unroll.
+
+  Scheme lunroll_ind := Induction for l_unroll Sort Prop.
+
+  Lemma l_unroll_monotone : monotone2 l_unroll.
+  Proof.
+    move=>IL CL r r' U H; move: IL CL U.
+    elim=>[|V|L IH|a F Ks IH] CL//=;
+                              case E:_ _/ =>[|G G' R|a' F' Ks' C D U]//.
+  - by move: E R => [<-] /H; constructor.
+  - by constructor=>//; apply H.
+  Qed.
+  Hint Resolve l_unroll_monotone.
+
+  Definition LUnroll IL CL := paco2 l_unroll bot2 IL CL.
+
+  Definition lu_unfold := paco2_unfold l_unroll_monotone.
+
+  Lemma LUnroll_ind n iG cG :
+    LUnroll iG cG <-> LUnroll (lunroll n iG) cG.
+  Proof.
+    split.
+    - elim: n =>[//|n Ih] in iG cG *; case: iG=>//= iL /lu_unfold.
+        by case E: _ _/ => [|L L' [|]|]//; move: E=>[->]; apply/Ih.
+    - elim: n =>// n Ih in iG cG *; case: iG=>//= G /Ih-H1.
+        by apply/paco2_fold; constructor; left.
+  Qed.
+
+  Lemma lunroll_end cL :
+    LUnroll l_end cL -> cL = rl_end.
+  Proof. by move=> /lu_unfold-LU; case Eq: _ _ / LU. Qed.
+
+  Lemma l_guarded_unroll iG :
+    l_closed (l_rec iG) -> lguarded 0 (l_rec iG) ->
+    lguarded 0 (l_open 0 (l_rec iG) iG).
+  Proof.
+    move=> C GG; have GG': (lguarded 1 iG) by move:GG C=>/=; case: iG.
+      by move: (lguarded_open 0 GG C GG')=>/lguarded_depth_gt/(_ (lopen_closed C)).
+  Qed.
+
+  Lemma l_guarded_nunroll n iL :
+    l_closed iL -> lguarded 0 iL -> lguarded 0 (lunroll n iL).
+  Proof.
+    elim: n iL=>[|n Ih]//;case=>// iG CG /(l_guarded_unroll CG)/Ih-H/=.
+      by apply/H/lopen_closed.
+  Qed.
+
+  Lemma l_closed_unroll n iL :
+    l_closed iL -> l_closed (lunroll n iL).
+  Proof. by elim: n iL=>[|n Ih]//=; case=>//= iG /lopen_closed/Ih. Qed.
+
+  Lemma v_lty G : (exists v, G = l_var v) \/ (forall v, G != l_var v).
+  Proof. by case: G; try (by right); move=>v;left;exists v. Qed.
+
+  CoFixpoint l_expand (l : l_ty) : rl_ty :=
+    match lunroll (lrec_depth l) l with
+    | l_msg a T K => rl_msg a T (K.1, l_expand K.2)
+    | _ => rl_end
+    end.
+
+  Lemma rltyU L : L = match L with
+                      | rl_msg a T C => rl_msg a T C
+                      | rl_end => rl_end
+                      end.
+  Proof. by case: L. Qed.
+
+  (*Fixpoint l_non_empty_cont G :=
+    match G with
+    | l_msg _ _ Ks => ~~ nilp Ks && all id [seq l_non_empty_cont K.2.2 | K <- Ks]
+    | l_rec G => l_non_empty_cont G
+    | _ => true
+    end.*)
+
+  Definition l_precond L :=
+    l_closed L && lguarded 0 L. (*&& l_non_empty_cont L.*)
+
+(*  Lemma lne_shift d n G :
+    l_non_empty_cont G ->
+    l_non_empty_cont (l_shift d n G).
+  Proof.
+    elim: G=>[|v|L Ih|a p Ks Ih]//= in n *.
+    - by case: ifP.
+    - by apply/Ih.
+    - move=>/andP-[NIL NE]; apply/andP;split;first by move: Ks NIL {Ih NE}=>[].
+      rewrite -map_comp /comp/=; move: NE=>/forallbP/forall_member/member_map.
+      move=>/(_ _ ((rwP (memberP _ _)).2 _))=> H.
+      apply/forallbP/forall_member/member_map=>b /(rwP (memberP _ _))-IN.
+        by apply: (Ih _ IN _ (H _ IN)).
+  Qed.
+
+  Lemma lne_open n G G' :
+    l_non_empty_cont G -> l_non_empty_cont G' -> l_non_empty_cont (l_open n G' G).
+  Proof.
+    move=> NE1 NE2; move: NE1.
+    elim: G n=>//.
+    - by move=> v n; rewrite /=; case: ifP=>// _ _; apply/lne_shift.
+    - by move=> G Ih n /=; apply/Ih.
+    - move=> a T C Ih n /=; case: C Ih=>//= K Ks Ih /andP-[NE_K ALL].
+      have K_in: K \in K :: Ks by rewrite in_cons !eq_refl.
+      rewrite (Ih K K_in n NE_K) /= {NE_K}.
+      move: ALL=>/forallbP/forall_member/member_map-ALL.
+      apply/forallbP/forall_member/member_map/member_map=>/=K' M.
+      move: M (ALL _ M)=>/memberP-M {}ALL.
+      have K'_in : K' \in K :: Ks by rewrite in_cons M orbT.
+        by apply/(Ih _ K'_in n)/ALL.
+  Qed.
+
+  Lemma lne_unr n G : l_non_empty_cont G -> l_non_empty_cont (lunroll n G).
+  Proof.
+    elim: n G=>[//|n/=] Ih; case=>//= G NE.
+    have: l_non_empty_cont (l_rec G) by [].
+      by move=>/(lne_open 0 NE); apply/Ih.
+  Qed.*)
+
+  Definition l_expand' L :=
+    match L with
+    | l_msg a T K => rl_msg a T (K.1, l_expand K.2)
+    | _ => rl_end
+    end.
+
+  Lemma l_expand_once L : l_expand L = l_expand' (lunroll (lrec_depth L) L).
+  Proof.
+      by rewrite (rltyU (l_expand _)) /l_expand /l_expand'-rltyU-/l_expand.
+  Qed.
+
+  Lemma l_expand_unr L :
+    lguarded 0 L ->
+    l_closed L ->
+    LUnroll L (l_expand L).
+  Proof.
+    move=>gG cG; rewrite l_expand_once.
+    move: {-1}(l_expand' _) (erefl (l_expand' (lunroll (lrec_depth L) L))).
+    move=>CG ECG; move: L CG {ECG gG cG}(conj ECG (conj gG cG)).
+    apply/paco2_acc=>r _ /(_ _ _ (conj erefl (conj _ _)))-CIH.
+    move=> G CG [<-]{CG} [gG cG]; case: G cG gG.
+    - by move=>_ _ /=; apply/paco2_fold; constructor.
+    - by move=>V /lclosed_not_var/(_ V)/eqP/(_ erefl).
+    - move=>G cG gG /=;apply/paco2_fold.
+      constructor; right; have gG': lguarded 1 G by move: gG.
+      rewrite (lguarded_recdepth (m:=0) gG' _ (l_rec G)) //.
+      apply/CIH; [by apply/l_guarded_unroll| by apply/lopen_closed].
+    - move=>F T C//= cG gG; apply/paco2_fold.
+      rewrite (surjective_pairing C); constructor; right.
+      by rewrite l_expand_once; apply CIH.
+  Qed.
+
+  Lemma LUnroll_EqL L CL CL' : LUnroll L CL -> EqL CL CL' -> LUnroll L CL'.
+  Proof.
+    move=> H1 H2; move: L CL' {H1 H2 CL} (ex_intro (fun=>_) CL (conj H1 H2)).
+    apply/paco2_acc=>r _ /(_ _ _ (ex_intro _ _ (conj _ _)))-CIH.
+    move=> L CL [CL'][LU]EQ.
+    move: LU EQ=>/(paco2_unfold l_unroll_monotone); case.
+    - move=>/(paco2_unfold EqL_monotone); case E: _ _ / =>//.
+        by apply/paco2_fold; constructor.
+    - move=> G G' [/CIH-GU|//] /GU-H.
+        by apply/paco2_fold; constructor; right.
+    - move=> a p t K C []//= LU /EqL_l_msg_inv[CC//= [-> [eql ->]]].
+      apply /paco2_fold; rewrite (surjective_pairing CC)//=; constructor; right.
+      by apply (CIH _ _ _ LU).
+  Qed.
+
+  Lemma lunroll_inf Li Lr Li' :
+    lunroll (lrec_depth Li) Li = l_rec Li' ->
+    LUnroll Li Lr.
+  Proof.
+    rewrite lunroll_nopen=>/nopen_rec-[m]; rewrite add0n=>[][BND].
+    rewrite {2}(nrec_lrecdepthI Li).
+    move: (getnr_nonrec Li) BND; case: (get_nr Li)=>//= v _ /eqP->.
+    move: (lrec_depth Li)=>d {v Li Li'}.
+    move EQ: (n_rec d (l_var m))=>Li LT; move: {EQ LT}(conj EQ LT)=>H.
+    move: (ex_intro (fun=>_) m (ex_intro (fun=>_) d H))=>{m d}H.
+    move: Li Lr H; apply/paco2_acc=> r _.
+    move=>/(_ _ _ (ex_intro _ _ (ex_intro _ _ (conj erefl _ ))))-CIH Li Lr.
+    move=>[m][n][<-]{Li}; case: n=>//= n LE.
+    apply/paco2_fold; constructor; move: LE; case: (boolP (n == m)).
+    - move=>/eqP-> _; rewrite lopen_nrec add0n eq_refl.
+      rewrite -/(n_rec m.+1 _) lshift_nrec // nrec_twice addnS.
+        by right; apply/CIH; apply: leq_addr.
+    - move=> H0 H1; move: {H0 H1} (conj H0 H1)=>/andP.
+      rewrite eq_sym -ltn_neqAle => LE; rewrite lopen_bound //.
+        by right; apply/CIH.
+  Qed.
+
+(*Fixpoint expand_env (e : seq (role * l_ty)) : {fmap role -> rl_ty} :=
+  match e with
+  | [::] => [fmap]
+  | (k, v) :: t => (expand_env t).[k <- l_expand v]
+  end%fmap.
+
+Lemma in_expanded_env (e : seq (role * l_ty)) p :
+  (omap l_expand (find_cont e p) = (expand_env e).[? p])%fmap.
+Proof.
+  elim: e=>//=; first by rewrite fnd_fmap0.
+  move=>[k v] t; rewrite fnd_set /extend; case: ifP=>[/eqP->|neq].
+  + by rewrite eq_refl.
+  + by rewrite eq_sym neq.
+Qed.*)
+
+  Lemma lunroll_isend L CL : LUnroll L CL -> l_isend L -> CL = rl_end.
+  Proof.
+    move=> LU /keep_unrolling-[k END]; move: LU=>/(LUnroll_ind k).
+      by move: END=><-; apply/lunroll_end.
+  Qed.
 
 End LTree.
