@@ -437,8 +437,7 @@ Inductive l_ty :=
 .
 Set Elimination Schemes.
 
-(*Print find_cont.
-Definition ilook (E : seq (role * l_ty)) p := odflt l_end (find_cont E p).*)
+Definition ilook (E : seq (role * l_ty)) p := odflt l_end (find_cont E p).
 
 Fixpoint partsL (G : l_ty) :=
   match G with
@@ -1576,7 +1575,7 @@ Section GTree.
   Unset Elimination Schemes.
   Inductive ig_ty :=
   | ig_end (CONT : rg_ty)
-  | ig_msg (ST : option lbl)
+  | ig_msg (ST : bool)
            (FROM TO : role)
            (CONT : mty * ig_ty).
   Set Elimination Schemes.
@@ -1639,7 +1638,7 @@ Inductive part_of_allT: role -> rg_ty -> Type :=
 
   Inductive iPart_of: role -> ig_ty -> Prop :=
   | ipof_end p cG: part_of p cG -> iPart_of p (ig_end cG)
-  | ipof_from F T C: iPart_of F (ig_msg None F T C)
+  | ipof_from F T C: iPart_of F (ig_msg false F T C)
   | ipof_to o F T C: iPart_of T (ig_msg o F T C)
   | ipof_cont p o F T C: iPart_of p C.2 -> iPart_of p (ig_msg o F T C).
 
@@ -1681,7 +1680,7 @@ Defined.*)
 
   Definition rg_unr (G : rg_ty) : ig_ty :=
     match G with
-    | rg_msg F T C => ig_msg None F T (C.1, ig_end C.2)
+    | rg_msg F T C => ig_msg false F T (C.1, ig_end C.2)
     | rg_end => ig_end rg_end
     end.
 
@@ -1938,9 +1937,9 @@ Section LTree.
   Inductive l_unroll (r : lty_rel) : l_ty -> rl_ty -> Prop :=
   | lu_end :
       @l_unroll r l_end rl_end
-  | lu_rec G G' :
-      r (l_open 0 (l_rec G) G) G' ->
-      @l_unroll r (l_rec G) G'
+  | lu_rec L L' :
+      r (l_open 0 (l_rec L) L) L' ->
+      @l_unroll r (l_rec L) L'
   | lu_msg a p t K C :
       r K C ->
       @l_unroll r (l_msg a p (t,K)) (rl_msg a p (t,C))
@@ -1996,8 +1995,8 @@ Section LTree.
     l_closed iL -> l_closed (lunroll n iL).
   Proof. by elim: n iL=>[|n Ih]//=; case=>//= iG /lopen_closed/Ih. Qed.
 
-  Lemma v_lty G : (exists v, G = l_var v) \/ (forall v, G != l_var v).
-  Proof. by case: G; try (by right); move=>v;left;exists v. Qed.
+  Lemma v_lty L : (exists v, L = l_var v) \/ (forall v, L != l_var v).
+  Proof. by case: L; try (by right); move=>v;left;exists v. Qed.
 
   CoFixpoint l_expand (l : l_ty) : rl_ty :=
     match lunroll (lrec_depth l) l with
@@ -2150,3 +2149,246 @@ Qed.*)
   Qed.
 
 End LTree.
+
+
+Section CProject_defs.
+
+  Inductive WF_ (r : rg_ty -> Prop) : rg_ty -> Prop :=
+  | WF_end : WF_ r rg_end
+  | WF_msg F T C :
+      F != T -> r C.2 -> WF_ r (rg_msg F T C).
+  Definition WF := paco1 WF_ bot1.
+
+  Lemma WF_mon : monotone1 WF_.
+  Proof.
+    move=> G r r' [].
+    - by move=> _; apply/WF_end.
+    - by move=> F T C FT H LE; apply/WF_msg=>//=; apply LE.
+  Qed.
+
+  (*Variable co_merge : (lbl -> option (mty * rl_ty)) -> rl_ty -> Prop.*)
+
+  Definition proj_rel := rg_ty -> rl_ty -> Prop.
+  Inductive Proj_ (p : role) (r : proj_rel) : proj_rel :=
+  | prj_end G : ~ part_of p G -> WF G -> Proj_ p r G rl_end
+  | prj_send q CG CL : p != q -> CG.1 = CL.1 -> r CG.2 CL.2 ->
+      Proj_ p r (rg_msg p q CG) (rl_msg l_send q CL)
+  | prj_recv q CG CL : p != q -> CG.1 = CL.1 -> r CG.2 CL.2 ->
+      Proj_ p r (rg_msg q p CG) (rl_msg l_recv q CL)
+  | prj_cnt q s CG L:
+      q != s -> p != q -> p != s ->
+      part_of p CG.2 -> r CG.2 L ->
+      Proj_ p r (rg_msg q s CG) L
+  .
+  Hint Constructors Proj_.
+  Derive Inversion Proj__inv  with (forall p r G L, Proj_ p r G L) Sort Prop.
+
+  Lemma Proj_monotone p : monotone2 (Proj_ p).
+  Proof.
+    rewrite /monotone2; move=> x0 x1 r r' it LE; move: it.
+    case=>//; try by move=> q CG CL neq eqt HP; constructor =>//=; apply LE.
+      by move=>G part; constructor.
+  Qed.
+  Hint Resolve Proj_monotone.
+  Definition Project p CG CL := paco2 (Proj_ p) bot2 CG CL.
+
+  Lemma Project_inv (p : role) (G : rg_ty) (L : rl_ty)
+        (P : role -> rg_ty -> rl_ty -> Prop) :
+    (forall G0, G0 = G -> rl_end = L -> ~ part_of p G0 -> WF G0 -> P p G0 rl_end) ->
+    (forall q CG CL,
+       rg_msg p q CG = G -> rl_msg l_send q CL = L ->
+       p != q -> CG.1 = CL.1 -> Project p CG.2 CL.2 ->
+       P p (rg_msg p q CG) (rl_msg l_send q CL)) ->
+    (forall q CG CL,
+       rg_msg q p CG = G -> rl_msg l_recv q CL = L ->
+       p != q -> CG.1 = CL.1 -> Project p CG.2 CL.2 ->
+       P p (rg_msg q p CG) (rl_msg l_recv q CL)) ->
+    (forall (q s : role) CG L0,
+        q != s -> p != q -> p != s ->
+        rg_msg q s CG = G -> L0 = L ->
+        part_of p CG.2 -> Project p CG.2 L0 ->
+        P p (rg_msg q s CG) L) ->
+    Project p G L -> P p G L.
+  Proof.
+    move=> Hend Hsnd Hrcv Hcnt /(paco2_unfold (Proj_monotone (p:=p))).
+    elim/Proj__inv =>/(paco2_fold _ _ _ _); rewrite -/(Project p G L) => PRJ.
+    + by move=> G0 PART WF EQ1 EQ2; apply/Hend.
+    + by move=> q CG CL pq eqt []//= IH EQ1 EQ2; apply/Hsnd.
+    + by move=> q CG CL pq eqt []//= IH EQ1 EQ2; apply/Hrcv.
+    + by move=> q s CG L0 qs pq ps pof []//= IH EQ1 EQ2; apply/Hcnt.
+  Qed.
+
+  Inductive IProj (p : role) : ig_ty -> rl_ty -> Prop :=
+  | iprj_end CG CL :
+      Project p CG CL ->
+      IProj p (ig_end CG) CL
+  | iprj_send1 q CG CL :
+      p != q ->
+      CG.1 = CL.1 ->
+      IProj p CG.2 CL.2 ->
+      IProj p (ig_msg false p q CG) (rl_msg l_send q CL)
+  | iprj_send2 q r CG L :
+      p != r ->
+      q != r ->
+      IProj p CG.2 L ->
+      IProj p (ig_msg true q r CG) L
+  | iprj_recv b q CG CL :
+      p != q ->
+      CG.1 = CL.1 ->
+      IProj p CG.2 CL.2 ->
+      IProj p (ig_msg b q p CG) (rl_msg l_recv q CL)
+  | iprj_cnt q s CG L :
+      q != s ->
+      p != q ->
+      p != s ->
+      IProj p CG.2 L ->
+      IProj p (ig_msg false q s CG) L
+  .
+
+
+  Lemma IProj_end_inv_aux p GG CG CL:
+    IProj p GG CL -> GG = ig_end CG ->
+    Project p CG CL.
+  Proof.
+  by case=>//; move=> CG0 CL0 ipro [CGeq]; rewrite -CGeq.
+  Qed.
+
+  Lemma IProj_end_inv p CG CL:
+    IProj p (ig_end CG) CL -> Project p CG CL.
+  Proof.
+  by move=> hp; apply (IProj_end_inv_aux hp).
+  Qed.
+
+  Lemma IProj_send1_inv_aux F T C G L:
+    IProj F G L -> G = (ig_msg false F T C) ->
+    F != T /\ (exists lC, L = rl_msg l_send T lC /\
+    C.1 = lC.1 /\ IProj F C.2 lC.2).
+  Proof.
+  case=>//=.
+  + move=> q gC lC neq eqt hp [eq1 eq2].
+    by rewrite -eq1 -eq2; split; [| exists lC;  split; [ |]].
+  + move=> o q gC lC neq eqt hp [eq1 eq2 eq3 eq4].
+    by move: neq; rewrite eq2 -(rwP negP).
+  + move=> q s gC {}L neq1 neq2 neq3 hp [eq1 eq2 eq3].
+    by move: neq2; rewrite eq1 eq_refl.
+  Qed.
+
+  Lemma IProj_send1_inv F T C L:
+    IProj F (ig_msg false F T C) L ->
+    F != T /\ (exists lC, L = rl_msg l_send T lC /\
+    C.1 = lC.1 /\ IProj F C.2 lC.2).
+  Proof.
+  by move=> hp; apply: (IProj_send1_inv_aux hp).
+  Qed.
+
+
+  Lemma IProj_send2_inv_aux p F T C G L:
+    IProj p G L -> G = (ig_msg true F T C) -> p != T ->
+    F != T /\ IProj p C.2 L.
+  Proof.
+  case=>//.
+  + by move=> q r gC {}L neq1 neq2 hp [<-<-<-] neq3; split.
+  + by move=> o- q gC lC neq eqt hp [_<-<-<-]; rewrite eq_refl.
+  Qed.
+
+  Lemma IProj_send2_inv p F T C L:
+    IProj p (ig_msg true F T C) L -> p != T ->
+    F != T /\ IProj p C.2 L.
+  Proof.
+  by move=> hp; apply: (IProj_send2_inv_aux hp).
+  Qed.
+
+ Lemma IProj_recv_inv_aux b F T C G L:
+    IProj T G L -> G = (ig_msg b F T C) ->
+    F != T /\ (exists lC, L = rl_msg l_recv F lC /\
+    C.1 = lC.1 /\ IProj T C.2 lC.2).
+  Proof.
+  case =>//.
+  + move=> q gC lC neq eqt hp [eq1 eq2 eq3 eq4].
+    by move: neq; rewrite eq3 eq_refl.
+  + move=> q r gC lC neq1 neq2 hp [eq1 eq2 eq3].
+    by rewrite eq3 eq_refl in neq1.
+  + move=> b0 q gC lC neq eqt hp [eq1 <- <-].
+    by rewrite eq_sym; split=>//=; exists lC; split=>//=; split.
+  + move=> q s gC lC neq1 neq2 neq3 hp [eq1 eq2 eq3 eq4].
+    by rewrite eq3 eq_refl in neq3.
+  Qed.
+
+  Lemma IProj_recv_inv b F T C L:
+    IProj T (ig_msg b F T C) L ->
+    F != T /\ (exists lC, L = rl_msg l_recv F lC /\
+    C.1 = lC.1 /\ IProj T C.2 lC.2).
+  Proof.
+  by move=> hp; apply: (IProj_recv_inv_aux hp).
+  Qed.
+
+  Lemma IProj_cnt_inv_aux p F T C G L:
+    IProj p G L ->
+    p != F -> p != T -> G = ig_msg false F T C ->
+    F != T /\ IProj p C.2 L.
+  Proof.
+  case =>//.
+  + move=> q gC lC neq eqt hp neqF neqT [eq1 eq2 eq3].
+    by rewrite eq1 eq_refl in neqF.
+  + move=> b q gC gL neq eqt hp neqF neqT [eq1 eq2 eq3 eq4].
+    by rewrite eq3 eq_refl in neqT.
+  + move=> q s gC {}L neq1 neq2 neq3 hp neqF neqT [eq1 eq2 <-].
+    by rewrite eq1 eq2 in neq1; split.
+  Qed.
+
+  Lemma IProj_cnt_inv p F T C L:
+    IProj p (ig_msg false F T C) L ->
+    p != F -> p != T ->
+    F != T /\ IProj p C.2 L.
+  Proof.
+  by move=> hp neq1 neq2; apply: (IProj_cnt_inv_aux hp neq1 neq2).
+  Qed.
+
+  Definition look (E : {fmap role -> rl_ty}) p := odflt rl_end E.[? p]%fmap.
+
+  Definition eProject (G: ig_ty) (E : {fmap role -> rl_ty}) : Prop :=
+    forall p, IProj p G (look E p).
+
+  Lemma EqL_Project p G lT lT':
+    EqL lT lT' -> Project p G lT -> Project p G lT'.
+  Proof.
+  move=> eql prj; move: (conj eql prj) => {eql prj}.
+  move=> /(ex_intro (fun lT=> _) lT) {lT}.
+  move: G lT'; apply /paco2_acc; move=> r0 _ CIH G lT'.
+  move: CIH=>/(_ _ _ (ex_intro _ _ (conj _ _)))-CIH.
+  move=> [lT []]; case lT'.
+  + move=> eql; move: (EqL_r_end_inv eql); move=>->.
+    rewrite /Project; move=> pro; move: paco2_mon; rewrite /monotone2.
+    by move=> pamo; apply (pamo _ _ _ _ _ _ _ pro).
+  + move=> a q C eql; move: (EqL_r_msg_inv eql)=> [C0 [eqt [eqlC lTeq]]].
+    rewrite lTeq; elim/Project_inv=>//=.
+    * move=> q0 CG CL eqG [asnd q0q ->] pq0 eqt0 prj; rewrite -q0q -asnd.
+      apply/paco2_fold; constructor=>//=; [by rewrite eqt0| right].
+      by apply (CIH _ _ _ eqlC).
+    * move=> q0 CG CL eqG [arcv q0q ->] pq0 eqt0 prj; rewrite -q0q -arcv.
+      apply/paco2_fold; constructor=>//=; [by rewrite eqt0| right].
+      by apply (CIH _ _ _ eqlC).
+    * move=> r s CG L0 neq1 neq2 neq3 eqG eqL part prj.
+      apply/paco2_fold; constructor=>//=; right.
+      by move: prj; apply CIH; move: eql; rewrite lTeq eqL.
+  Qed.
+
+  Lemma EqL_IProj p G lT lT':
+    IProj p G lT -> EqL lT lT' -> IProj p G lT'.
+  Proof.
+  move=> hp; move: hp lT'; elim.
+  + move=> CG {}lT Pro lT' eqL; apply: iprj_end.
+    by apply: (EqL_Project eqL Pro).
+  + move=> q C lC neq eqt proj Ih lT' eqL.
+    move: (EqL_l_msg_inv eqL)=>[lC'] [eqt' [eqL' ->]].
+    by constructor=>//=; [rewrite eqt|apply Ih].
+  + move=> q r C {}lT neq1 neq2 proj Ih lT' eqL.
+    by constructor=>//=; apply Ih.
+  + move=> b q C lC neq eqt proj Ih lT' eqL.
+    move: (EqL_l_msg_inv eqL)=>[lC'] [eqt' [eqL' ->]].
+    by constructor=>//=; [rewrite eqt| apply Ih].
+  + move=> q s C {}lT qs pq ps prj Ih lT' eqL.
+    by constructor=>//=; apply Ih.
+  Qed.
+
+End CProject_defs.
