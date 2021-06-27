@@ -2127,20 +2127,20 @@ Section LTree.
         by right; apply/CIH.
   Qed.
 
-(*Fixpoint expand_env (e : seq (role * l_ty)) : {fmap role -> rl_ty} :=
-  match e with
-  | [::] => [fmap]
-  | (k, v) :: t => (expand_env t).[k <- l_expand v]
-  end%fmap.
+  Fixpoint expand_env (e : seq (role * l_ty)) : {fmap role -> rl_ty} :=
+    match e with
+    | [::] => [fmap]
+    | (k, v) :: t => (expand_env t).[k <- l_expand v]
+    end%fmap.
 
-Lemma in_expanded_env (e : seq (role * l_ty)) p :
-  (omap l_expand (find_cont e p) = (expand_env e).[? p])%fmap.
-Proof.
-  elim: e=>//=; first by rewrite fnd_fmap0.
-  move=>[k v] t; rewrite fnd_set /extend; case: ifP=>[/eqP->|neq].
-  + by rewrite eq_refl.
-  + by rewrite eq_sym neq.
-Qed.*)
+  Lemma in_expanded_env (e : seq (role * l_ty)) p :
+    (omap l_expand (find_cont e p) = (expand_env e).[? p])%fmap.
+  Proof.
+    elim: e=>//=; first by rewrite fnd_fmap0.
+    move=>[k v] t; rewrite fnd_set /extend; case: ifP=>[/eqP->|neq].
+    + by rewrite eq_refl.
+    + by rewrite eq_sym neq.
+  Qed.
 
   Lemma lunroll_isend L CL : LUnroll L CL -> l_isend L -> CL = rl_end.
   Proof.
@@ -2392,3 +2392,269 @@ Section CProject_defs.
   Qed.
 
 End CProject_defs.
+
+Section ProjectionsCommute.
+
+  Lemma partof_cont_unroll G CG p L n :
+    g_closed G ->
+    GUnroll G CG -> project G p == Some L ->
+    depth_part n p G -> part_of p CG.
+  Proof.
+    elim: n G CG L=>// n Ih [||G|F T C] //= CG L cG.
+    - case PRJ: project=>[L0|]//; move: PRJ=>/eqP-PRJ.
+      case: ifP; first by move=>/(lbinds_depth _ PRJ)->.
+      move=> NB /gunroll_unfold; elim/gunr_inv=>// _ IG CG0 GU [EQ1] EQ2 _ DP.
+      move: EQ1 EQ2 GU DP=>//-> _ []//GU /(depthpart_open 0 (g_rec G))-DP.
+      move: NB PRJ=>/eqP-NB /eqP-PRJ; move: (project_open NB cG PRJ)=>{}/eqP-P.
+        by move: cG=>/gopen_closed/Ih/(_ GU P DP).
+    - move=>/gunroll_unfold; elim/gunr_inv=>// _ F' T' C' CC CG' []//= UA [->->eq3] _ {CG}.
+      case PRJ: project=>[K|]//; case: ifP=>// FT.
+      case: ifP=>[/eqP<- _|pF]; first by constructor.
+      case: ifP=>[/eqP<- _|pT]; first by constructor.
+      move=> /eqP[]-KL; rewrite eq_sym pF eq_sym pT/= => DP.
+      constructor=>//=; move: PRJ DP=>/eqP; move: cG UA; rewrite /g_closed -eq3//=.
+      by apply Ih.
+  Qed.
+
+  Lemma depth_part_unroll G CG p n :
+    GUnroll G CG -> depth_part n p G -> part_of p CG.
+  Proof.
+    elim: n G CG =>// n Ih [||G|F T C] //= CG.
+    - move=>  /gunroll_unfold; elim/gunr_inv=>// _ IG CG0 GU [EQ1] EQ2 DP.
+      move: EQ1 EQ2 GU DP=>//-> _ []//GU /(depthpart_open 0 (g_rec G))-DP.
+      by move: GU DP; apply Ih.
+    - move=>/gunroll_unfold; elim/gunr_inv=>// _ F' T' C' IG' CG' []//= UA [->->eq3] eq4.
+      case pF: (p == F)=>//=; [by move: pF=>/eqP<- _; constructor|].
+      case: ifP; [by move=>/eqP<- _; constructor|move=> pT DP; constructor=>//=].
+      by move: UA DP; rewrite -eq3 //=; apply Ih.
+  Qed.
+
+  Lemma depth_part_participants p G:
+    (exists n, depth_part n p G) <-> p \in participants G.
+  Proof.
+    split; [move=> []n|].
+    + move: G; elim n=> //= {}n Ih {}G; case: G=>//=.
+      move=> F T C; rewrite !in_cons; case pF: (p == F)=>//=.
+      by case: ifP=>//= pT; apply Ih.
+    + elim G=>//=; [by move=> {}G Ih parts; move: (Ih parts)=> [n {}Ih]; exists n.+1|].
+      move=> F T C Ih /orP[]; [by move=> /eqP->; exists 1=>//=; rewrite eq_refl|].
+      move=> /orP[]; [by move=> /eqP[]->; exists 1=>//=; rewrite eq_refl orbT|].
+      by move=> parts; move: (Ih parts)=>[n {}Ih]; exists n.+1=>//=; case: ifP.
+  Qed.
+
+  Lemma participants_unroll G CG p:
+    GUnroll G CG ->
+    p \in participants G ->
+          part_of p CG.
+  Proof.
+    move=> gu; rewrite -depth_part_participants=>[[n]].
+    by apply depth_part_unroll.
+  Qed.
+
+  Lemma partof_unroll G CG p :
+    g_closed G ->
+    guarded 0 G ->
+    GUnroll G CG ->
+    part_of p CG ->
+    p \in participants G.
+  Proof.
+    move=> cG gG GU PART.
+    elim: PART=>[F T C| F T C|{}p F T C pof Ih] in G cG gG GU *.
+    - apply: r_in_unroll_rec_depth; move: GU=>/(GUnroll_ind (rec_depth G)).
+      move: (n_unroll (rec_depth G) G) (unroll_guarded cG gG)=>{cG gG}G NR GU.
+      move: GU NR=>/gunroll_unfold; elim/gunr_inv =>// _;
+        first by move=> IG _ _ _ _ /(_ IG); rewrite eq_refl.
+        by move=> F' T' C' CG' _ _ _ [->] _ _ _; rewrite in_cons eq_refl.
+    - apply: r_in_unroll_rec_depth; move: GU=>/(GUnroll_ind (rec_depth G)).
+      move: (n_unroll (rec_depth G) G) (unroll_guarded cG gG)=>{cG gG}G NR GU.
+      move: GU NR=>/gunroll_unfold; elim/gunr_inv =>// _;
+        first by move=> IG _ _ _ _ /(_ IG); rewrite eq_refl.
+        by move=> F' T' C' CG' _ _ _ [] _ <- _ _; rewrite in_cons orbC in_cons eq_refl.
+    - apply: r_in_unroll_rec_depth; move: GU=>/(GUnroll_ind (rec_depth G)).
+      move: (g_guarded_nunroll (rec_depth G) cG gG) (unroll_guarded cG gG).
+      move: (n_unroll (rec_depth G) G) (g_closed_unroll (rec_depth G) cG).
+      move=>{cG gG}G cG gG NR GU.
+      move: GU NR cG gG =>/gunroll_unfold; elim/gunr_inv =>// _;
+        first by move=> IG _ _ _ _ /(_ IG); rewrite eq_refl.
+      move=> F' T' t {}CG CG' UA E1 [e1 e2 E2] _; rewrite /g_closed//= => cl gu.
+      rewrite !in_cons; apply /orP; right; apply /orP; right.
+      by apply (Ih _ cl gu); rewrite -E2//=; move: UA=>[].
+  Qed.
+
+  Notation CIH4 X Y H1 H2 H3 H4
+    := (ex_intro (fun=>_) X
+                 (ex_intro (fun=>_) Y
+                           (conj H1 (conj H2 (conj H3 H4))))).
+  Lemma project_wf G p L CG :
+    g_closed G ->
+    guarded 0 G ->
+    project G p == Some L ->
+    GUnroll G CG -> WF CG.
+  Proof.
+    move=>H1 H2 H3 H4; move: (CIH4 L G H1 H2 H3 H4)=> {H1 H2 H3 H4 G L}.
+    move: CG; apply/paco1_acc=>r _ /(_ _ (CIH4 _ _ _ _ _ _ ))-CIH.
+    move=> CG [L] [G] [cG [gG [PRJ GU]]]; apply/paco1_fold.
+    move: (unroll_guarded cG gG); move: PRJ=>/eqP-PRJ.
+    move: (project_unroll (rec_depth G) cG PRJ)=>[n1][n2][L'][{}PRJ] _.
+    move: GU=>/(GUnroll_ind (rec_depth G)); move: PRJ.
+    move: gG=>/(g_guarded_nunroll (rec_depth G) cG).
+    move: cG=>/(g_closed_unroll (rec_depth G)).
+    move: (n_unroll (rec_depth G) G) => {}G; move: L'=>{}L {n1 n2}.
+    case: G =>/=.
+    - by move=>_ _ _ /gunroll_unfold; elim/gunr_inv=>//; constructor.
+    - by move=>v /=; rewrite /g_closed/=.
+    - by move=>G _ _ _ _ /(_ G); rewrite eq_refl.
+    - rewrite /g_closed//=; move=> F T C cl gu.
+      case PRJ: project =>[L'|//]; move: PRJ=>/eqP-PRJ.
+      case: ifP=>// FT _; move=>/gunroll_unfold.
+      elim/gunr_inv => //=  gun F' T' t C' CC UA [->->eqpair] eqcg _.
+      constructor; rewrite ?FT//=; right; apply (CIH _ _ _ cl gu PRJ).
+        by rewrite -eqpair; move: UA=>[].
+  Qed.
+
+  (*Lemma lunroll_merge r L CL CONT Ks
+        (LU : LUnroll L CL)
+        (PRJ : prj_all simple_merge CONT r = Some Ks)
+        (MRG : simple_merge L [seq K.2.2 | K <- Ks] = Some L)
+    : exists CCL,
+      same_dom (find_cont Ks) CCL /\ simple_co_merge CCL CL.
+  Proof.
+    set CCL := fun l =>
+                 match find_cont Ks l with
+                 | Some (Ty, _) => Some (Ty, CL)
+                 | None => None
+                 end.
+    exists CCL; split.
+    - move=> l Ty; split=>[][G]; rewrite /CCL/=.
+      + by move=>->; exists CL.
+      + by case: find_cont=>// [][Ty' G'][<-_]; exists G'.
+    - rewrite /CCL=>l Ty L'; case: find_cont=>//[][Ty' G'][_]->.
+      by apply/EqL_refl.
+  Qed.*)
+
+  Lemma project_nonrec (r0 : proj_rel ) r CL CG L G
+        (CIH : forall cG cL iG iL,
+            g_closed iG ->
+            guarded 0 iG ->
+            (*non_empty_cont iG ->*)
+            project iG r == Some iL ->
+            GUnroll iG cG ->
+            LUnroll iL cL ->
+            r0 cG cL)
+        (cG : g_closed G)
+        (gG : guarded 0 G)
+        (*NE : non_empty_cont G*)
+        (nrG : forall G' : g_ty, G != g_rec G')
+        (iPrj : project G r = Some L)
+        (GU : GUnroll G CG)
+        (LU : LUnroll L CL)
+    : paco2 (Proj_ r) r0 CG CL.
+  Proof.
+    move: (closed_not_var cG).
+    case: (boolP (r \notin participants G)); [| rewrite negbK].
+    - move=> PARTS nvG; move: iPrj=>/eqP-iPrj.
+      move: (proj1 (project_parts cG iPrj) PARTS)=> endL.
+      move: (lunroll_isend LU endL)=>->; apply/paco2_fold.
+      constructor; first by move=>/(partof_unroll cG gG GU)-P'; move: P' PARTS=>->.
+        by apply/(project_wf cG gG iPrj).
+    - case: G cG gG nrG iPrj GU=>//; first by move=> GT _ _ /(_ GT); rewrite eq_refl.
+      move=>FROM TO CONT; rewrite /g_closed //= => cl gu _.
+      case prj: project=>[Lpr|]//=; case: ifP=>//= FT; rewrite !in_cons.
+      case: ifP =>//=.
+      + move=> /eqP-Fr [eqL] /gunroll_unfold.
+        case Egmsg: _ _/ =>[ | |F T t IG CG' gun]//=.
+        move: gun=>[]//= gun _ _; move: Egmsg=> [<-<- eq3].
+        move: (lu_unfold LU); rewrite -eqL eq3=>{}LU.
+        case Elmsg: _ _/LU=>[||a p tt LL LL' UL]//= .
+        move: Elmsg UL=>[<-<-<-<-] UL; rewrite -Fr//=.
+        apply /paco2_fold; constructor; [by rewrite FT| by[]|right].
+        by move: UL=> []//=; move: prj gun=>/eqP; move: cl gu; rewrite eq3//=; apply CIH.
+      + case: ifP=> Tr Fr [eqL] /gunroll_unfold.
+        * move: Tr=>/eqP-Tr; case Egmsg: _ _/ =>[ | |F T t IG CG' gun]//= _ _.
+          move: gun=>[]//= gun; move: Egmsg=>[<-<- eq3].
+          move: (lu_unfold LU); rewrite -eqL eq3=>{}LU.
+          case Elmsg: _ _/LU=>[||a p tt LL LL' UL]//= .
+          move: Elmsg UL=>[<-<-<-<-] UL; rewrite -Tr//=.
+          apply /paco2_fold; constructor; [by rewrite eq_sym; rewrite FT| by []|right].
+          by move: UL=> []//=; move: prj gun=>/eqP; move: cl gu; rewrite eq3//=; apply CIH.
+        * case Egmsg: _ _/ =>[ | |F T t IG CG' gun]//=.
+          rewrite eq_sym Fr eq_sym Tr//==>partC _.
+          move: gun=>[]//= gun; move: Egmsg=>[<-<- eq3]; apply /paco2_fold.
+          constructor; [by rewrite FT| by rewrite eq_sym Fr| by rewrite eq_sym Tr| |right].
+          - by apply: (participants_unroll gun); rewrite eq3 in partC.
+          - by move: prj gun LU=>/eqP; move: cl gu; rewrite eq3 eqL; apply CIH.
+  Qed.
+
+  Theorem ic_proj r :
+    forall iG iL cG cL,
+      g_closed iG ->
+      guarded 0 iG ->
+      project iG r == Some iL ->
+      GUnroll iG cG ->
+      LUnroll iL cL ->
+      Project r cG cL.
+  Proof.
+    move=> iG iL cG cL CG GG Prj GU LU.
+    move: (conj CG (conj GG (conj Prj (conj GU LU))))
+    => {CG GG Prj GU LU}.
+    move => /(ex_intro (fun iL=> _) iL) {iL}.
+    move => /(ex_intro (fun iG=> _) iG) {iG}.
+    move: cG cL; apply/paco2_acc=> r0 _ CIH.
+    move: CIH =>/(_ _ _
+                  (ex_intro _ _
+                     (ex_intro _ _
+                        (conj _ (conj _ (conj _ (conj _ _)))))))-CIH.
+    move=> cG cL [iG] [cG'] [ciG] [giG] [iGiL] [GU LU].
+    move: iGiL  => /eqP-iGiL.
+    move: (project_unroll (rec_depth iG) ciG iGiL) => [U1] [U2] [L] [proj] U12.
+    move: LU =>/(LUnroll_ind U1); move: U12=>->; rewrite -LUnroll_ind=>UL.
+    move : GU (unroll_guarded ciG giG)=>/(GUnroll_ind (rec_depth iG))=>GU nrG.
+    move: (g_guarded_nunroll (rec_depth iG) ciG giG)=>guiG.
+    move: (g_closed_unroll (rec_depth iG) ciG)=>cuiG {ciG giG iGiL}.
+      by apply/(project_nonrec CIH cuiG guiG nrG proj).
+  Qed.
+
+  Theorem coind_proj r G L :
+    g_precond G ->
+    project G r == Some L ->
+    Project r (g_expand G) (l_expand L).
+  Proof.
+    rewrite/g_precond=>/andP-[cG gG] P.
+    move: (proj_lclosed cG P) (project_guarded P) =>cL gL.
+    move: (g_expand_unr gG cG) (l_expand_unr gL cL)=>{cL gL}.
+      by apply/ic_proj.
+  Qed.
+
+  Theorem expand_eProject (g : g_ty) (e : seq (role * l_ty))
+    : eproject g = Some e ->
+      eProject (ig_end (g_expand g)) (expand_env e).
+  Proof.
+    move=>EPRJ p; constructor.
+    have PRE: g_precond g by move: EPRJ;rewrite/eproject;case:ifP.
+    move: (precond_parts PRE); case: (boolP (nilp (participants g))).
+    + move=> NOPARTS [//|END]; move: EPRJ; rewrite /eproject PRE.
+      move: (participants g) NOPARTS=>[]//= _ [<-].
+      rewrite /look -in_expanded_env/= (expand_g_end END).
+      apply/paco2_fold/prj_end; first by case E: _ / =>//.
+        by apply/paco1_fold; constructor.
+    + move=> NE _ //=.
+      have cG: g_closed g by move: PRE=>/andP-[cG gG].
+      have gG: guarded 0 g by move: PRE=>/andP-[_ gG].
+      have GU: GUnroll g (g_expand g) by apply/(g_expand_unr gG cG).
+      move: (eproject_some EPRJ NE)=>[q [L] /eqP-PRJ'].
+      have gWF: WF (g_expand g) by apply/(project_wf cG gG PRJ' GU).
+      move=>{PRJ' L q}.
+      case: (boolP (p \in participants g)).
+      - move=>PS; move: EPRJ=>/eqP/eproject_part/(_ _ PS)-PRJ.
+        rewrite /look -in_expanded_env.
+        have ->: (odflt rl_end (omap l_expand (find_cont e p)))
+        = l_expand (odflt l_end (find_cont e p))
+          by case: find_cont=>//=;rewrite (rltyU (l_expand _)).
+          by apply/coind_proj=>//; apply/eqP.
+      - move=>PARTS; have NP: ~ part_of p (g_expand g)
+                by move=> P_of; move: PARTS; rewrite (partof_unroll cG gG GU).
+        rewrite /look -in_expanded_env (fnd_not_part EPRJ PARTS)/=.
+          by apply/paco2_fold/prj_end.
+  Qed.
+
+End ProjectionsCommute.
