@@ -34,7 +34,9 @@ Canonical lact_eqType := Eval hnf in EqType l_act lact_eqMixin.
 
 
 Inductive act :=
-| mk_act (a : l_act) (p : role) (q : role) (l : lbl) (t : mty).
+  (*| mk_act (a : l_act) (p : role) (q : role) (l : lbl) (t : mty).*)
+  | mk_act (a : l_act) (p : role) (q : role) (t : mty).
+
 
 (* a trace is simply a stream of actions *)
 CoInductive trace (act : Type) :=
@@ -48,6 +50,6 @@ CoFixpoint trace_map {A B : Type} (f : A -> B) (trc : trace A) : trace B :=
   end
 .
 
-Definition subject A := let: mk_act a p q _ _ := A in p.
-Definition object A := let: mk_act a p q _ _ := A in q.
-Definition act_ty A := let: mk_act a _ _ _ _ := A in a.
+Definition subject A := let: mk_act a p q _ := A in p.
+Definition object A := let: mk_act a p q _ := A in q.
+Definition act_ty A := let: mk_act a _ _ _ := A in a.
