@@ -428,84 +428,92 @@ End GlobalSyntax.
 
 
 Section LocalSyntax.
-Unset Elimination Schemes.
-Inductive l_ty :=
-| l_end
-| l_var (v : nat)
-| l_rec (L : l_ty)
-| l_msg (a : l_act) (r : role) (K : (mty * l_ty))
-.
-Set Elimination Schemes.
 
-Definition ilook (E : seq (role * l_ty)) p := odflt l_end (find_cont E p).
-
-Fixpoint partsL (G : l_ty) :=
-  match G with
+  Unset Elimination Schemes.
+  Inductive lty :=
   | l_end
-  | l_var _ => [::]
-  | l_rec G => partsL G
-  | l_msg a p K => p::partsL K.2
-  end.
+  | l_jump (X : nat)
+  | l_rec (k : lty)
+  | l_send (q : role) (t : mty) (L : lty)
+  | l_recv (p : role) (t : mty) (L : lty)
+  .
+  Set Elimination Schemes.
 
-Lemma l_ty_ind :
-  forall (P : l_ty -> Prop),
-    P l_end ->
-    (forall v, P (l_var v)) ->
-    (forall G, P G -> P (l_rec G)) ->
-    (forall a p K, P K.2 -> P (l_msg a p K)) ->
-    forall l : l_ty, P l.
-Proof.
-  move => P P_end P_var P_rec P_msg.
-  fix Ih 1; case=>[|v|L|a r K].
-  + by apply: P_end.
-  + by apply: P_var.
-  + by apply: P_rec.
-  + by apply: P_msg; elim: K.
-Qed.
+  Definition ilook (E : seq (role * lty)) p := odflt l_end (find_cont E p).
 
-Fixpoint depth_lty L :=
-  match L with
-  | l_end
-  | l_var _ => 0
-  | l_rec L => (depth_lty L).+1
-  | l_msg _ _ K => (depth_lty K.2).+1
-  end.
+  Fixpoint partsL (L : lty) :=
+    match L with
+    | l_end
+    | l_jump _ => [::]
+    | l_rec G => partsL G
+    | l_send q t L => q::partsL L
+    | l_recv p t L => p::partsL L
+    end.
 
-Fixpoint eq_lty x y :=
-  match x, y with
-  | l_end, l_end => true
-  | l_var x, l_var y => x == y
-  | l_rec x, l_rec y => eq_lty x y
-  | l_msg a1 r1 C1, l_msg a2 r2 C2
-    => (a1 == a2) && (r1 == r2)
-         && (C1.1 == C2.1) && (eq_lty C1.2 C2.2)
-  | _, _ => false
-  end.
+  Lemma lty_ind :
+    forall (P : lty -> Prop),
+      P l_end ->
+      (forall v, P (l_jump v)) ->
+      (forall G, P G -> P (l_rec G)) ->
+      (forall q t L, P L -> P (l_send q t L)) ->
+      (forall p t L, P L -> P (l_recv p t L)) ->
+      forall l : lty, P l.
+  Proof.
+    move => P P_end P_jump P_rec P_send P_recv.
+    fix Ih 1; case=>[|v|L|q t L|p t L].
+    + by apply: P_end.
+    + by apply: P_jump.
+    + by apply: P_rec.
+    + by apply: P_send.
+    + by apply: P_recv.
+  Qed.
 
-Definition eq_lcont (l r : (mty * l_ty)) :=
-  (l.1 == r.1) && eq_lty l.2 r.2.
+  Fixpoint depth_lty L :=
+    match L with
+    | l_end
+    | l_jump _ => 0
+    | l_rec L => (depth_lty L).+1
+    | l_send _ _ L => (depth_lty L).+1
+    | l_recv _ _ L => (depth_lty L).+1
+    end.
 
-Lemma eqlty_msg a1 a2 r1 r2 K1 K2 :
+  Fixpoint eq_lty x y :=
+    match x, y with
+    | l_end, l_end => true
+    | l_jump x, l_jump y => x == y
+    | l_rec x, l_rec y => eq_lty x y
+    | l_send q1 t1 L1, l_send q2 t2 L2
+      => (q1 == q2) && (t1 == t2) && (eq_lty L1 L2)
+    | l_recv p1 t1 L1, l_recv p2 t2 L2
+      => (p1 == p2) && (t1 == t2) && (eq_lty L1 L2)
+    | _, _ => false
+    end.
+
+  (*Definition eq_lcont (l r : (mty * l_ty)) :=
+    (l.1 == r.1) && eq_lty l.2 r.2.*)
+
+(*Lemma eqlty_msg a1 a2 r1 r2 K1 K2 :
   eq_lty (l_msg a1 r1 K1) (l_msg a2 r2 K2) =
   (a1 == a2) && (r1 == r2) && eq_lcont K1 K2.
 Proof.
   rewrite /=; do 2 (case: eqP=>///= _); move: K1 K2 {r1 r2 a1 a2}.
-Qed.
+Qed.*)
 
-Lemma lty_eqP : Equality.axiom eq_lty.
-Proof.
-  rewrite /Equality.axiom; fix Ih 1 => x y.
-  case: x => [|v|L|a r K]; case: y =>[|v'|L'|a' r' K']; try (by constructor).
-  + by rewrite /eq_lty; case: eqP=>[->|F]; constructor=>//[[/F]].
-  + by rewrite /=; case: Ih=>[->|F]; constructor=>//[[/F]].
-  + rewrite eqlty_msg; do 2 (case: eqP=>[<-|H];[|constructor=>[[]]//] =>/=).
-    case: K=>t G; case: K'=> t' G'.
-    rewrite /eq_lcont//=; case: eqP=>//=[<-|F]; [|by constructor=>[[/F]]].
-    by case Ih=>[<-|F]; constructor=>//=[[/F]].
-Qed.
+  Lemma lty_eqP : Equality.axiom eq_lty.
+  Proof.
+    rewrite /Equality.axiom; fix Ih 1 => x y.
+    case: x => [|v|L|r t L|r t L];
+                 case: y =>[|v'|L'|r' t' L'|r' t' L']; try (by constructor).
+    + by rewrite /eq_lty; case: eqP=>[->|F]; constructor=>//[[/F]].
+    + by rewrite /=; case: Ih=>[->|F]; constructor=>//[[/F]].
+    + rewrite /=; do 2 (case: eqP=>[<-|H];[|constructor=>[[]]//] =>/=).
+      by case: Ih=>[->|F]; constructor=>//=[[/F]].
+    + rewrite /=; do 2 (case: eqP=>[<-|H];[|constructor=>[[]]//] =>/=).
+      by case: Ih=>[->|F]; constructor=>//=[[/F]].
+  Qed.
 
-Definition lty_eqMixin := EqMixin lty_eqP.
-Canonical lty_eqType := Eval hnf in EqType l_ty lty_eqMixin.
+  Definition lty_eqMixin := EqMixin lty_eqP.
+  Canonical lty_eqType := Eval hnf in EqType lty lty_eqMixin.
 
 (*Lemma in_maximum_leq v l: v \in l -> v <= foldr maxn 0 l.
 Proof.
@@ -532,32 +540,38 @@ Proof.
       by apply: Ih.
 Qed.*)
 
-Fixpoint l_shift n d (L : l_ty) :=
-  match L with
-  | l_end => l_end
-  | l_var v => if v >= d then l_var (n + v) else L
-  | l_msg a p K => l_msg a p (K.1, l_shift n d K.2)
-  | l_rec L => l_rec (l_shift n d.+1 L)
-  end.
+  Fixpoint l_shift n d (L : lty) :=
+    match L with
+    | l_end => l_end
+    | l_jump v => if v >= d then l_jump (n + v) else L
+    | l_send r t L => l_send r t (l_shift n d L)
+    | l_recv r t L => l_recv r t (l_shift n d L)
+    | l_rec L => l_rec (l_shift n d.+1 L)
+    end.
 
-Fixpoint l_open (d : nat) (L2 : l_ty) (L1 : l_ty) :=
-  match L1 with
-  | l_end => L1
-  | l_var v => if v == d then l_shift d 0 L2 else L1
-  | l_rec L => l_rec (l_open d.+1 L2 L)
-  | l_msg a p K => l_msg a p (K.1, l_open d L2 K.2)
-  end.
-Notation "{ k '~>' v } L":= (l_open k v L) (at level 30, right associativity).
-Notation "L '^' v":= (l_open 0 (l_var v) L) (at level 30, right associativity).
+  Fixpoint l_open (d : nat) (L2 : lty) (L1 : lty) :=
+    match L1 with
+    | l_end => L1
+    | l_jump v => if v == d then l_shift d 0 L2 else L1
+    | l_rec L => l_rec (l_open d.+1 L2 L)
+    | l_send r t L => l_send r t (l_open d L2 L)
+    | l_recv r t L => l_recv r t (l_open d L2 L)
+    end.
+  Notation "{ k '~>' v } L":= (l_open k v L) (at level 30, right associativity).
+  Notation "L '^' v":= (l_open 0 (l_jump v) L) (at level 30, right associativity).
 
-Lemma open_notvar n L L' :
-  (forall v : nat, L != l_var v) ->
-  (forall v : nat, l_open n L' L != l_var v).
-Proof. by case: L=>//v /(_ v)/eqP. Qed.
+  Lemma open_notvar n L L' :
+    (forall v : nat, L != l_jump v) ->
+    (forall v : nat, l_open n L' L != l_jump v).
+  Proof. by case: L=>//v /(_ v)/eqP. Qed.
 
-Lemma l_open_msg_rw d L2 a r K:
- l_open d L2 (l_msg a r K) = l_msg a r (K.1, l_open d L2 K.2).
-Proof. by []. Qed.
+  Lemma l_open_send_rw d L2 q t L:
+    l_open d L2 (l_send q t L) = l_send q t (l_open d L2 L).
+  Proof. by []. Qed.
+
+  Lemma l_open_recv_rw d L2 p t L:
+    l_open d L2 (l_recv p t L) = l_recv p t (l_open d L2 L).
+  Proof. by []. Qed.
 
 (*Lemma unzip2_lift A B C (f : B -> C) (K : seq (A * B)) :
   [seq f x | x <- unzip2 K] = unzip2 [seq (x.1, f x.2) | x <- K].
@@ -571,370 +585,373 @@ Lemma map2_zip A B C (f : B -> C) (K : seq (A * B)) :
   zip (unzip1 K) [seq f x | x <- unzip2 K] = [seq (x.1, f x.2) | x <- K].
 Proof. by rewrite unzip2_lift (unzip1_map2 f) zip_unzip. Qed.*)
 
-Fixpoint l_fidx (d : nat) (L : l_ty) : bool :=
-  match L with
-  | l_end => true
-  | l_var v => if v >= d then false else true
-  | l_rec L => l_fidx d.+1 L
-  | l_msg _ _ K => l_fidx d K.2
-  end.
+  Fixpoint l_fidx (d : nat) (L : lty) : bool :=
+    match L with
+    | l_end => true
+    | l_jump v => if v >= d then false else true
+    | l_rec L => l_fidx d.+1 L
+    | l_send _ _ L => l_fidx d L
+    | l_recv _ _ L => l_fidx d L
+    end.
 
-Definition l_closed (L : l_ty) := l_fidx 0 L.
+  Definition l_closed (L : lty) := l_fidx 0 L.
 
-Lemma lfbvar_next n L :
-  l_fidx n L -> l_fidx n.+1 L.
-Proof.
-  elim: L n=>[//|v|L Ih|a p K Ih] n/=; try by apply Ih.
-  case: v=>//= m H; case: ifP=>// n_m; move: H.
-  by move: (leq_trans (leqnSn n) n_m)=>->.
-Qed.
+  Lemma lfbvar_next n L :
+    l_fidx n L -> l_fidx n.+1 L.
+  Proof.
+    elim: L n=>[//|v|L Ih|r t L Ih|r t L Ih] n/=; try by apply Ih.
+    case: v=>//= m H; case: ifP=>// n_m; move: H.
+      by move: (leq_trans (leqnSn n) n_m)=>->.
+  Qed.
 
-Lemma lfbvar_gt n m L :
-  n <= m ->
-  l_fidx n L -> l_fidx m L.
-Proof.
-  move=> LE H; move: LE; elim: m=>[|m Ih]//; first by case: n H=>///eqP.
-  move: H; case: (boolP (n == m.+1))=>[/eqP->/eqP//|NE _ LE].
-  by apply /lfbvar_next/Ih; move: (conj NE LE)=>/andP; rewrite -ltn_neqAle.
-Qed.
+  Lemma lfbvar_gt n m L :
+    n <= m ->
+    l_fidx n L -> l_fidx m L.
+  Proof.
+    move=> LE H; move: LE; elim: m=>[|m Ih]//; first by case: n H=>///eqP.
+    move: H; case: (boolP (n == m.+1))=>[/eqP->/eqP//|NE _ LE].
+      by apply /lfbvar_next/Ih; move: (conj NE LE)=>/andP; rewrite -ltn_neqAle.
+  Qed.
 
-Lemma lshift_closed n d L :
-  l_fidx d L -> l_shift n d L = L.
-Proof.
-  elim: L=> [| v | L Ih | a p K Ih]//= in d *.
-  { (* var *)
-    by case: ifP=>//.
-  }
-  { (* rec *)
-    by move=>H; congr l_rec; apply/Ih.
-  }
-  { (* msg *)
-    by move=>H; rewrite Ih//= -!surjective_pairing.
-  }
-Qed.
+  Lemma lshift_closed n d L :
+    l_fidx d L -> l_shift n d L = L.
+  Proof.
+    elim: L=> [| v | L Ih | r t L Ih | r t L Ih]//= in d *.
+    { (* jump *)
+        by case: ifP=>//.
+    }
+    { (* rec *)
+        by move=>H; congr l_rec; apply/Ih.
+    }
+    { (* send *)
+        by move=>H; rewrite Ih//=.
+    }
+    { (* recv *)
+        by move=>H; rewrite Ih//=.
+    }
+  Qed.
 
-Lemma lopen_closed L :
-  l_closed (l_rec L) ->
-  l_closed (l_open 0 (l_rec L) L).
-Proof.
-  rewrite/l_closed/==>L_fbv; have: l_fidx 0 (l_rec L) by [].
-  move: (l_rec L) => L' L'0.
-  elim: L 0 L_fbv=>[//|v|L Ih|a q K Ih] n /=.
-  - rewrite  lshift_closed//= ltn_neqAle; case: ifP=>//=.
+  Lemma lopen_closed L :
+    l_closed (l_rec L) ->
+    l_closed (l_open 0 (l_rec L) L).
+  Proof.
+    rewrite/l_closed/==>L_fbv; have: l_fidx 0 (l_rec L) by [].
+    move: (l_rec L) => L' L'0.
+    elim: L 0 L_fbv=>[//|v|L Ih|r t L Ih|r t L Ih] n /=; try by apply Ih.
+    rewrite  lshift_closed//= ltn_neqAle; case: ifP=>//=.
     case: ifP=>//=; [by rewrite (lfbvar_gt _ L'0)|].
-    by case: ifP=>//=; move=> nv vnf; rewrite eq_sym vnf.
-  - by apply Ih; apply gfbvar_next.
-  - by apply Ih.
- Qed.
+      by case: ifP=>//=; move=> nv vnf; rewrite eq_sym vnf.
+  Qed.
 
-Fixpoint lguarded d L :=
-  match L with
-  | l_end => true
-  | l_var v => v >= d
-  | l_rec L => lguarded d.+1 L
-  | l_msg _ _ K => lguarded 0 K.2
-  end.
+  Fixpoint lguarded d L :=
+    match L with
+    | l_end => true
+    | l_jump v => v >= d
+    | l_rec L => lguarded d.+1 L
+    | l_send _ _ L => lguarded 0 L
+    | l_recv _ _ L => lguarded 0 L
+    end.
 
-Fixpoint l_binds n L :=
-  match L with
-  | l_var v => v == n
-  | l_rec L => l_binds n.+1 L
-  | _ => false
-  end.
+  Fixpoint l_binds n L :=
+    match L with
+    | l_jump v => v == n
+    | l_rec L => l_binds n.+1 L
+    | _ => false
+    end.
 
-Fixpoint lguarded' L :=
-  match L with
-  | l_end
-  | l_var _ => true
-  | l_rec L => ~~ l_binds 0 L && lguarded' L
-  | l_msg _ _ K => lguarded' K.2
-  end.
+  Fixpoint lguarded' L :=
+    match L with
+    | l_end
+    | l_jump _ => true
+    | l_rec L => ~~ l_binds 0 L && lguarded' L
+    | l_send _ _ L => lguarded' L
+    | l_recv _ _ L => lguarded' L
+    end.
 
-Lemma lguarded_next n L : lguarded n.+1 L = ~~ l_binds n L && lguarded n L.
-Proof. by elim: L n=>//= v n; rewrite ltn_neqAle eq_sym. Qed.
+  Lemma lguarded_next n L : lguarded n.+1 L = ~~ l_binds n L && lguarded n L.
+  Proof. by elim: L n=>//= v n; rewrite ltn_neqAle eq_sym. Qed.
 
-Lemma lguarded_binds L : lguarded 0 L = lguarded' L.
-Proof.
-  by elim: L=>[||L|_ _ K Ih]//=<-;apply/lguarded_next.
-Qed.
+  Lemma lguarded_binds L : lguarded 0 L = lguarded' L.
+  Proof.
+      by elim: L=>[||L|_ _ L Ih|_ _ L Ih]//=<-;apply/lguarded_next.
+  Qed.
 
-Lemma lguarded_rec d L
-  : lguarded d (l_rec L) -> forall s, s <= d -> ~~ l_binds s L.
-Proof.
-elim: L=>[|v|L /= Ih|a p K Ih]// in d *.
-- move=>/= vd s sd; move: (leq_ltn_trans sd vd).
-  by rewrite eq_sym ltn_neqAle=>/andP-[].
-- by rewrite /==>/Ih-{Ih}Ih s Lsd; apply/Ih.
-Qed.
+  Lemma lguarded_rec d L
+    : lguarded d (l_rec L) -> forall s, s <= d -> ~~ l_binds s L.
+  Proof.
+    elim: L=>[|v|L /= Ih|r t L Ih|r t L Ih]// in d *.
+    - move=>/= vd s sd; move: (leq_ltn_trans sd vd).
+        by rewrite eq_sym ltn_neqAle=>/andP-[].
+    - by rewrite /==>/Ih-{Ih}Ih s Lsd; apply/Ih.
+  Qed.
 
-Fixpoint lrec_depth L :=
-  match L with
-  | l_rec G => (lrec_depth G).+1
-  | _ => 0
-  end.
+  Fixpoint lrec_depth L :=
+    match L with
+    | l_rec L => (lrec_depth L).+1
+    | _ => 0
+    end.
 
-Fixpoint lunroll d G :=
-  match d with
-  | 0 => G
-  | d.+1 =>
-    match G with
-    | l_rec G' => lunroll d (l_open 0 G G')
-    | _ => G
-    end
-  end.
+  Fixpoint lunroll d L :=
+    match d with
+    | 0 => L
+    | d.+1 =>
+      match L with
+      | l_rec L' => lunroll d (l_open 0 L L')
+      | _ => L
+      end
+    end.
 
-Lemma lguarded_match d G :
-  match G with
-  | l_var v => d < v
-  | _ => lguarded d.+1 G
-  end ->
-  (exists v, (G == l_var v) && (d < v)) \/
-  (forall v, (G != l_var v)) /\ lguarded d.+1 G.
-Proof.
-  case: G=>[|||]//=; try by right.
-  by move=> n Eq; left; exists n; rewrite eq_refl.
-Qed.
+  Lemma lguarded_match d L :
+    match L with
+    | l_jump v => d < v
+    | _ => lguarded d.+1 L
+    end ->
+    (exists v, (L == l_jump v) && (d < v)) \/
+    (forall v, (L != l_jump v)) /\ lguarded d.+1 L.
+  Proof.
+    case: L=>[||||]//=; try by right.
+      by move=> n Eq; left; exists n; rewrite eq_refl.
+  Qed.
 
-Lemma lguarded_recdepth d L m :
-  lguarded d L ->
-  m < d ->
-  forall L', lrec_depth L = lrec_depth ({m ~> L'} L).
-Proof.
-  elim: L=>[|n|L Ih|a p K Ih]//= in d m *.
-  - move=>dn md L; case: ifP=>[/eqP-E|ne//].
-    by move: E dn md=>-> /leq_ltn_trans-H /H; rewrite ltnn.
-  - by move=> GL md L'; rewrite (Ih _ m.+1 GL _ L').
-Qed.
+  Lemma lguarded_recdepth d L m :
+    lguarded d L ->
+    m < d ->
+    forall L', lrec_depth L = lrec_depth ({m ~> L'} L).
+  Proof.
+    elim: L=>[|n|L Ih|r t L Ih|r t L Ih]//= in d m *.
+    - move=>dn md L; case: ifP=>[/eqP-E|ne//].
+        by move: E dn md=>-> /leq_ltn_trans-H /H; rewrite ltnn.
+    - by move=> GL md L'; rewrite (Ih _ m.+1 GL _ L').
+  Qed.
 
-Lemma lty_not_var A L (b1 : nat -> A) (b2 : A) :
-  (forall v : nat, L != l_var v) ->
-  match L with | l_var v => b1 v | _ => b2 end = b2.
-Proof. by case: L =>[|n /(_ n)/eqP||]. Qed.
+  Lemma lty_not_var A L (b1 : nat -> A) (b2 : A) :
+    (forall v : nat, L != l_jump v) ->
+    match L with | l_jump v => b1 v | _ => b2 end = b2.
+  Proof. by case: L =>[|n /(_ n)/eqP|||]. Qed.
 
-Lemma lguarded_depth_gt dL dL' L :
-  lguarded dL' L -> l_closed L -> lguarded dL L.
-Proof.
-  rewrite /l_closed=> H H'; move: 0 (leq0n dL') H H'.
-  elim: L =>[|n|L Ih|a p Ks Ih]// in dL dL' *.
-  - by move=> m /leq_trans-H /= /H->.
-  - by move=> n ndL' /=; apply/Ih.
-Qed.
+  Lemma lguarded_depth_gt dL dL' L :
+    lguarded dL' L -> l_closed L -> lguarded dL L.
+  Proof.
+    rewrite /l_closed=> H H'; move: 0 (leq0n dL') H H'.
+    elim: L =>[|n|L Ih|r t L Ih|r t L Ih]// in dL dL' *.
+    - by move=> m /leq_trans-H /= /H->.
+    - by move=> n ndL' /=; apply/Ih.
+  Qed.
 
-Lemma lclosed_not_var L :
-  l_closed L ->
-  forall v, L != l_var v.
-Proof. by case: L=>//= v. Qed.
+  Lemma lclosed_not_var L :
+    l_closed L ->
+    forall v, L != l_jump v.
+  Proof. by case: L=>//= v. Qed.
 
-Lemma lopen_not_var d L L' :
-  l_closed L ->
-  (forall v, L' != l_var v) ->
-  forall v, {d ~> L} L' != l_var v.
-Proof. by case: L'=>// n _ /(_ n)/eqP. Qed.
+  Lemma lopen_not_var d L L' :
+    l_closed L ->
+    (forall v, L' != l_jump v) ->
+    forall v, {d ~> L} L' != l_jump v.
+  Proof. by case: L'=>// n _ /(_ n)/eqP. Qed.
 
-Lemma lguarded_open d1 d2 L L' :
-  lguarded 0 L' ->
-  l_closed L' ->
-  lguarded d1 L ->
-  lguarded d1 ({d2 ~> L'} L).
-Proof.
-  elim: L=>[|n|L Ih|p q K Ih]//= in d1 d2 *.
-  - case: ifP=>// _ gL cL; rewrite (lshift_closed _ cL)=>_.
-    by apply/(lguarded_depth_gt _ gL).
-  - by apply/Ih.
-  - by move=> GL' CL' H; apply Ih=>//=.
-Qed.
+  Lemma lguarded_open d1 d2 L L' :
+    lguarded 0 L' ->
+    l_closed L' ->
+    lguarded d1 L ->
+    lguarded d1 ({d2 ~> L'} L).
+  Proof.
+    elim: L=>[|n|L Ih|r t L Ih|r t L Ih]//= in d1 d2 *.
+    - case: ifP=>// _ gL cL; rewrite (lshift_closed _ cL)=>_.
+        by apply/(lguarded_depth_gt _ gL).
+    - by apply/Ih.
+    - by move=> GL' CL' H; apply Ih=>//=.
+    - by move=> GL' CL' H; apply Ih=>//=.
+  Qed.
 
-Lemma lguarded_gt d d' L :
-  d >= d' ->
-  lguarded d L ->
-  lguarded d' L.
-Proof.
-  elim: L=>[|n|L Ih|p q Ks Ih]//= in d d' *.
-  - by move=>/leq_trans-H /H.
-  - by move=> H; apply/Ih.
-Qed.
+  Lemma lguarded_gt d d' L :
+    d >= d' ->
+    lguarded d L ->
+    lguarded d' L.
+  Proof.
+    elim: L=>[|n|L Ih|r t L Ih|r t L Ih]//= in d d' *.
+    - by move=>/leq_trans-H /H.
+    - by move=> H; apply/Ih.
+  Qed.
 
-Lemma lunroll_guarded L :
-  l_closed L ->
-  lguarded 0 L ->
-  forall L', lunroll (lrec_depth L) L != l_rec L'.
-Proof.
-  move: {-2}(lrec_depth L) (eq_refl (lrec_depth L)) => n.
-  elim: n => [|n Ih]/= in L *; case: L=>// L n_rd CL GL; move: n_rd.
-  rewrite eqE/=-eqE => n_rd.
-  have/=GL': (lguarded 0 (l_rec L)) by [].
-  move: n_rd; rewrite (lguarded_recdepth GL' (ltn0Sn 0) (l_rec L))=>n_rd.
-  apply/Ih=>//; first by apply/lopen_closed.
-  by apply/lguarded_open=>//; apply/lguarded_gt; last by apply/GL'.
-Qed.
+  Lemma lunroll_guarded L :
+    l_closed L ->
+    lguarded 0 L ->
+    forall L', lunroll (lrec_depth L) L != l_rec L'.
+  Proof.
+    move: {-2}(lrec_depth L) (eq_refl (lrec_depth L)) => n.
+    elim: n => [|n Ih]/= in L *; case: L=>// L n_rd CL GL; move: n_rd.
+    rewrite eqE/=-eqE => n_rd.
+    have/=GL': (lguarded 0 (l_rec L)) by [].
+    move: n_rd; rewrite (lguarded_recdepth GL' (ltn0Sn 0) (l_rec L))=>n_rd.
+    apply/Ih=>//; first by apply/lopen_closed.
+      by apply/lguarded_open=>//; apply/lguarded_gt; last by apply/GL'.
+  Qed.
 
-Fixpoint l_isend L {struct L}:=
-  match L with
-  | l_rec L => l_isend L
-  | l_end => true
-  | _ => false
-  end.
+  Fixpoint l_isend L {struct L}:=
+    match L with
+    | l_rec L => l_isend L
+    | l_end => true
+    | _ => false
+    end.
 
-Lemma isend_open n L' L :
-  l_isend L -> l_open n L' L = L.
-Proof.
-  elim: L=>[|v|L Ih|a p K Ih]//= in n *; move=> END.
-  by rewrite Ih.
-Qed.
+  Lemma isend_open n L' L :
+    l_isend L -> l_open n L' L = L.
+  Proof.
+    elim: L=>[|v|L Ih|r t L Ih|r t L Ih]//= in n *; move=> END.
+      by rewrite Ih.
+  Qed.
 
-Lemma keep_unrolling L :
-  l_isend L -> exists m, l_end = lunroll m L.
-Proof.
-  elim: L=>[||L Ih|]//; [move=>_| move=>/=END; move:(Ih END)=>[n U]].
-  - by exists 0.
-  - by exists n.+1=>/=; rewrite (isend_open 0 _ END).
-Qed.
+  Lemma keep_unrolling L :
+    l_isend L -> exists m, l_end = lunroll m L.
+  Proof.
+    elim: L=>[||L Ih||]//; [move=>_| move=>/=END; move:(Ih END)=>[n U]].
+    - by exists 0.
+    - by exists n.+1=>/=; rewrite (isend_open 0 _ END).
+  Qed.
 
-Lemma l_closed_no_binds_aux m n L: m <= n -> l_fidx m L -> l_binds n L = false.
-Proof.
-elim: L m n; rewrite //=.
-+ move=> v m n le; case: ifP=>//.
-  by move=> lefalse; elim; apply: ltn_eqF;
-    apply: (leq_trans _ le); move: (negbT lefalse); rewrite-ltnNge //=.
-+ by move=> L IH m n le; apply: IH; rewrite //=.
-Qed.
+  Lemma l_closed_no_binds_aux m n L: m <= n -> l_fidx m L -> l_binds n L = false.
+  Proof.
+    elim: L m n; rewrite //=.
+    + move=> v m n le; case: ifP=>//.
+        by move=> lefalse; elim; apply: ltn_eqF;
+                    apply: (leq_trans _ le); move: (negbT lefalse); rewrite-ltnNge //=.
+    + by move=> L IH m n le; apply: IH; rewrite //=.
+  Qed.
 
-Lemma l_closed_no_binds n L: l_closed L -> l_binds n L = false.
-Proof. by apply: l_closed_no_binds_aux. Qed.
+  Lemma l_closed_no_binds n L: l_closed L -> l_binds n L = false.
+  Proof. by apply: l_closed_no_binds_aux. Qed.
 
-Lemma l_binds_open m n L L1: n != m -> l_closed L1
-  -> l_binds m (l_open n L1 L) = l_binds m L.
-Proof.
-elim: L m n L1.
-+ by move=> m n L1 neq closed; rewrite /l_binds //=.
-+ move=> v m n L1 neq closed.
-  rewrite /l_binds //=; case: ifP => //=; rewrite <-(rwP eqP); move=>->.
-  rewrite (lshift_closed _ closed).
-  move: (@l_closed_no_binds m _ closed); rewrite /l_binds; move =>->.
-  by move: (negbTE neq).
-+ by move=> L IH m n L1 neq closed; rewrite //=; apply: IH.
-+ by [].
-Qed.
+  Lemma l_binds_open m n L L1: n != m -> l_closed L1
+                               -> l_binds m (l_open n L1 L) = l_binds m L.
+  Proof.
+    elim: L m n L1; [| | |by []| by[]].
+    + by move=> m n L1 neq closed; rewrite /l_binds //=.
+    + move=> v m n L1 neq closed.
+      rewrite /l_binds //=; case: ifP => //=; rewrite <-(rwP eqP); move=>->.
+      rewrite (lshift_closed _ closed).
+      move: (@l_closed_no_binds m _ closed); rewrite /l_binds; move =>->.
+        by move: (negbTE neq).
+    + by move=> L IH m n L1 neq closed; rewrite //=; apply: IH.
+  Qed.
 
-Fixpoint n_rec d L :=
-  match d with
-  | 0 => L
-  | d.+1 => l_rec (n_rec d L)
-  end.
+  Fixpoint n_rec d L :=
+    match d with
+    | 0 => L
+    | d.+1 => l_rec (n_rec d L)
+    end.
 
-Fixpoint n_open d n L :=
-  match n with
-  | 0 => L
-  | m.+1 => l_open d (n_rec d.+1 (n_open d.+1 m L)) (n_open d.+1 m L)
-  end.
+  Fixpoint n_open d n L :=
+    match n with
+    | 0 => L
+    | m.+1 => l_open d (n_rec d.+1 (n_open d.+1 m L)) (n_open d.+1 m L)
+    end.
 
-Fixpoint get_nr L :=
-  match L with
-  | l_rec L => get_nr L
-  | _ => L
-  end.
+  Fixpoint get_nr L :=
+    match L with
+    | l_rec L => get_nr L
+    | _ => L
+    end.
 
-Lemma nrec_comm d L : n_rec d (l_rec L) = n_rec d.+1 L.
-Proof. by elim: d =>//= n ->. Qed.
+  Lemma nrec_comm d L : n_rec d (l_rec L) = n_rec d.+1 L.
+  Proof. by elim: d =>//= n ->. Qed.
 
-Lemma nopen_rec_comm n L : n_open 0 n (l_rec L) = l_rec (n_open 1 n L).
-Proof.
-  elim: n 0 L=>//= n Ih d L.
-  rewrite Ih/= -Ih/= -/(n_rec d.+1 _) -/(n_rec d.+2 _).
-  by rewrite Ih -/(n_rec d.+2 _) nrec_comm.
-Qed.
+  Lemma nopen_rec_comm n L : n_open 0 n (l_rec L) = l_rec (n_open 1 n L).
+  Proof.
+    elim: n 0 L=>//= n Ih d L.
+    rewrite Ih/= -Ih/= -/(n_rec d.+1 _) -/(n_rec d.+2 _).
+      by rewrite Ih -/(n_rec d.+2 _) nrec_comm.
+  Qed.
 
-Lemma lunroll_nopen L :
-  lunroll (lrec_depth L) L = n_open 0 (lrec_depth L) (get_nr L).
-Proof.
-  rewrite -{2}/(n_open 0 0 L) -{2}(@addn0 (lrec_depth L)); move: {2 4}0 => n.
-  elim: L n=>//= L Ih n.
-  rewrite nopen_rec_comm/= -/(n_open 0 (lrec_depth L + n).+1 _).
-  by rewrite -/(n_open 0 n.+1 _); rewrite Ih addnS.
-Qed.
+  Lemma lunroll_nopen L :
+    lunroll (lrec_depth L) L = n_open 0 (lrec_depth L) (get_nr L).
+  Proof.
+    rewrite -{2}/(n_open 0 0 L) -{2}(@addn0 (lrec_depth L)); move: {2 4}0 => n.
+    elim: L n=>//= L Ih n.
+    rewrite nopen_rec_comm/= -/(n_open 0 (lrec_depth L + n).+1 _).
+      by rewrite -/(n_open 0 n.+1 _); rewrite Ih addnS.
+  Qed.
 
-Lemma nopen_var' m n L v : n_open m n L = l_var v -> L = l_var v.
-Proof.
-  elim: n m=>//= n Ih m.
-  case EQ: n_open=>[|v'||]//=; case: ifP=>// _ [EV].
-  by move: EV EQ=>->{v'}/Ih.
-Qed.
+  Lemma nopen_var' m n L v : n_open m n L = l_jump v -> L = l_jump v.
+  Proof.
+    elim: n m=>//= n Ih m.
+    case EQ: n_open=>[|v'|||]//=; case: ifP=>// _ [EV].
+      by move: EV EQ=>->{v'}/Ih.
+  Qed.
 
-Lemma getnr_nonrec L : match get_nr L with
-                       | l_rec _ => false
-                       | _ => true
-                       end.
-Proof. by elim: L. Qed.
+  Lemma getnr_nonrec L : match get_nr L with
+                         | l_rec _ => false
+                         | _ => true
+                         end.
+  Proof. by elim: L. Qed.
 
-(* lbinds m (get_nr L) is the same as get_nr L = l_var m *)
-Lemma nopen_rec d n L L' :
-  n_open d n (get_nr L) = l_rec L' ->
-  exists m, l_binds m (get_nr L) /\ m < d + n.
-Proof.
-  elim: n =>[|n Ih] //= in d L' *;
-    first by move=> H; move: H (getnr_nonrec L)=>->.
-  case EQ: (n_open d.+1 n (get_nr L)) => [|v|Lr|]//=.
-  - case: ifP=>///eqP-EV; rewrite (nopen_var' EQ)/=EV =>{}EQ.
-    exists d; rewrite eq_refl; split=>//.
-    rewrite addnS; by apply/leq_addr.
-  - move: (Ih _ _ EQ)=>[m][BND] LE _.
-    by exists m; split=>//; rewrite addnS.
-Qed.
+  (* lbinds m (get_nr L) is the same as get_nr L = l_var m *)
+  Lemma nopen_rec d n L L' :
+    n_open d n (get_nr L) = l_rec L' ->
+    exists m, l_binds m (get_nr L) /\ m < d + n.
+  Proof.
+    elim: n =>[|n Ih] //= in d L' *;
+                first by move=> H; move: H (getnr_nonrec L)=>->.
+    case EQ: (n_open d.+1 n (get_nr L)) => [|v|Lr||]//=.
+    - case: ifP=>///eqP-EV; rewrite (nopen_var' EQ)/=EV =>{}EQ.
+      exists d; rewrite eq_refl; split=>//.
+      rewrite addnS; by apply/leq_addr.
+    - move: (Ih _ _ EQ)=>[m][BND] LE _.
+        by exists m; split=>//; rewrite addnS.
+  Qed.
 
-(* l_open d L (n_rec m L') = n_rec m (l_open (d - m) L L') ? *)
-Lemma lopen_nrec d m L
-  : l_open d L (n_rec m (l_var m)) =
-    n_rec m (if d == 0 then l_shift (d + m) 0 L else l_var m).
-Proof.
-  rewrite -{2 5} (add0n m) -{1 3}(add0n d); move: {-3 5}0=>n.
-  elim: m=>[|m Ih]/= in n *.
-  - case: (ifP (d == 0))=>[/eqP->|]; first by rewrite eq_refl !addn0.
-    by case: ifP=>//; rewrite eqn_add2l eq_sym=>->.
-  - by rewrite !addnS -!addSn Ih.
-Qed.
+  (* l_open d L (n_rec m L') = n_rec m (l_open (d - m) L L') ? *)
+  Lemma lopen_nrec d m L
+    : l_open d L (n_rec m (l_jump m)) =
+      n_rec m (if d == 0 then l_shift (d + m) 0 L else l_jump m).
+  Proof.
+    rewrite -{2 5} (add0n m) -{1 3}(add0n d); move: {-3 5}0=>n.
+    elim: m=>[|m Ih]/= in n *.
+    - case: (ifP (d == 0))=>[/eqP->|]; first by rewrite eq_refl !addn0.
+        by case: ifP=>//; rewrite eqn_add2l eq_sym=>->.
+    - by rewrite !addnS -!addSn Ih.
+  Qed.
 
-Lemma nrec_lrecdepthI L : L = n_rec (lrec_depth L) (get_nr L).
-Proof. by elim: L=>//= L<-. Qed.
+  Lemma nrec_lrecdepthI L : L = n_rec (lrec_depth L) (get_nr L).
+  Proof. by elim: L=>//= L<-. Qed.
 
-Lemma nrec_twice n m L : n_rec n (n_rec m L) = n_rec (n + m) L.
-Proof. by elim n=>//= {}n->. Qed.
+  Lemma nrec_twice n m L : n_rec n (n_rec m L) = n_rec (n + m) L.
+  Proof. by elim n=>//= {}n->. Qed.
 
-Lemma lopen_bound d n m L :
-  m < d + n ->
-  l_open d L (n_rec n (l_var m)) = n_rec n (l_var m).
-Proof.
-  elim: n=>[|n Ih]//= in d *; last by rewrite addnS -addSn=>/Ih->.
-  by rewrite addn0 ltn_neqAle=>/andP-[/negPf->].
-Qed.
+  Lemma lopen_bound d n m L :
+    m < d + n ->
+    l_open d L (n_rec n (l_jump m)) = n_rec n (l_jump m).
+  Proof.
+    elim: n=>[|n Ih]//= in d *; last by rewrite addnS -addSn=>/Ih->.
+      by rewrite addn0 ltn_neqAle=>/andP-[/negPf->].
+  Qed.
 
-Lemma lshift_nrec d r m n :
-  n < r + m ->
-  l_shift d r (n_rec m (l_var n)) = n_rec m (l_var n).
-Proof.
-  elim: m=> [|m Ih]//= in r *; first by rewrite addn0 ltnNge=>/negPf->.
-  by rewrite addnS -addSn/==>/Ih->.
-Qed.
+  Lemma lshift_nrec d r m n :
+    n < r + m ->
+    l_shift d r (n_rec m (l_jump n)) = n_rec m (l_jump n).
+  Proof.
+    elim: m=> [|m Ih]//= in r *; first by rewrite addn0 ltnNge=>/negPf->.
+      by rewrite addnS -addSn/==>/Ih->.
+  Qed.
 
-
-Lemma lguarded_lbinds_lt s Lr :
-  l_binds s Lr = false ->
-  lguarded s Lr ->
-  lguarded s.+1 Lr.
-Proof.
-  move: {-1}(lrec_depth Lr) (erefl (lrec_depth Lr))=> n E.
-  elim: n=>[|n Ih] in s Lr E *.
-  - by case: Lr E=>//= v _ /(rwP negPf); rewrite ltn_neqAle eq_sym=>->->.
-  - case: Lr E=>//= L [/Ih-E]; apply/E.
-Qed.
+  Lemma lguarded_lbinds_lt s Lr :
+    l_binds s Lr = false ->
+    lguarded s Lr ->
+    lguarded s.+1 Lr.
+  Proof.
+    move: {-1}(lrec_depth Lr) (erefl (lrec_depth Lr))=> n E.
+    elim: n=>[|n Ih] in s Lr E *.
+    - by case: Lr E=>//= v _ /(rwP negPf); rewrite ltn_neqAle eq_sym=>->->.
+    - case: Lr E=>//= L [/Ih-E]; apply/E.
+  Qed.
 
 End LocalSyntax.
 
 Section IProject.
 
-  Fixpoint project (g : g_ty) (r : role) : option l_ty :=
+  Fixpoint project (g : g_ty) (r : role) : option lty :=
     match g with
     | g_end => Some l_end
-    | g_var v => Some (l_var v)
+    | g_var v => Some (l_jump v)
     | g_rec G =>
       match project G r with
       | Some L => Some (if l_binds 0 L then l_end else l_rec L)
@@ -945,16 +962,16 @@ Section IProject.
       | Some L => if p == q
                   then None
                   else if p == r
-                       then Some (l_msg l_send q (K.1, L))
+                       then Some (l_send q K.1 L)
                        else if q == r
-                            then Some (l_msg l_recv p (K.1, L))
+                            then Some (l_recv p K.1 L)
                             else Some L
       | None => None
       end
     end.
 
   Fixpoint project_all (parts : seq role) (g : g_ty)
-    : option (seq (role * l_ty))
+    : option (seq (role * lty))
     := match parts with
        | [::] => Some [::]
        | p :: parts =>
@@ -964,7 +981,7 @@ Section IProject.
          end
        end%fmap.
 
-  Definition eproject (g : g_ty) : option (seq (role * l_ty)) :=
+  Definition eproject (g : g_ty) : option (seq (role * lty)) :=
     if g_precond g
     then project_all (undup (participants g)) g
     else None.
@@ -994,7 +1011,7 @@ Section IProject.
       by move=>[<-]; rewrite /=/extend eq_sym (negPf pq); apply/Ih.
   Qed.
 
-  Lemma eproject_part (g : g_ty) (e : seq (role * l_ty)) :
+  Lemma eproject_part (g : g_ty) (e : seq (role * lty)) :
     eproject g == Some e ->
     forall p,
       p \in participants g -> project g p = Some (odflt l_end (find_cont e p)).
@@ -1055,7 +1072,7 @@ Section IProject.
   Qed.
 
   Lemma project_var_notin p G v L :
-    (L == l_end) || (L == l_var v) ->
+    (L == l_end) || (L == l_jump v) ->
     project G p == Some L ->
     p \notin participants G.
   Proof.
@@ -1072,17 +1089,17 @@ Section IProject.
   Qed.
 
   Lemma projectmsg_var n p r s K:
-    project (g_msg r s K) p == Some (l_var n) ->
+    project (g_msg r s K) p == Some (l_jump n) ->
     r != p /\ s != p /\ r != s /\
-    project K.2 p == Some (l_var n).
+    project K.2 p == Some (l_jump n).
   Proof.
     rewrite //=; case Prj: project => [KL|//]; move: Prj=>/eqP.
     by do ! case: ifP=>//.
   Qed.
 
   Lemma proj_var_eq G p q v v':
-    project G p == Some (l_var v) ->
-    project G q == Some (l_var v') ->
+    project G p == Some (l_jump v) ->
+    project G q == Some (l_jump v') ->
     v == v'.
   Proof.
     elim: G => [|n|G Ih|f t K Ih]//= in v v' *.
@@ -1164,7 +1181,7 @@ Section IProject.
 
 
   Lemma project_var_parts G v r :
-    project G r == Some (l_var v) -> r \notin participants G.
+    project G r == Some (l_jump v) -> r \notin participants G.
   Proof. by apply/project_var_notin/orP/or_intror/eq_refl. Qed.
 
 
@@ -1321,7 +1338,7 @@ Section IProject.
 
   Fixpoint l_isvar L :=
     match L with
-    | l_var v => true
+    | l_jump v => true
     | l_rec L => l_isvar L
     | _ => false
     end.
@@ -1933,16 +1950,19 @@ Section LTree.
   Qed.
 
 
-  Definition lty_rel := rel2 l_ty (fun=>rl_ty).
-  Inductive l_unroll (r : lty_rel) : l_ty -> rl_ty -> Prop :=
+  Definition lty_rel := rel2 lty (fun=>rl_ty). Print l_act.
+  Inductive l_unroll (r : lty_rel) : lty -> rl_ty -> Prop :=
   | lu_end :
       @l_unroll r l_end rl_end
   | lu_rec L L' :
       r (l_open 0 (l_rec L) L) L' ->
       @l_unroll r (l_rec L) L'
-  | lu_msg a p t K C :
+  | lu_send p t K C :
       r K C ->
-      @l_unroll r (l_msg a p (t,K)) (rl_msg a p (t,C))
+      @l_unroll r (l_send p t K) (rl_msg a_send p (t,C))
+  | lu_recv p t K C :
+      r K C ->
+      @l_unroll r (l_recv p t K) (rl_msg a_recv p (t,C))
   .
   Hint Constructors l_unroll.
 
@@ -1951,9 +1971,10 @@ Section LTree.
   Lemma l_unroll_monotone : monotone2 l_unroll.
   Proof.
     move=>IL CL r r' U H; move: IL CL U.
-    elim=>[|V|L IH|a F Ks IH] CL//=;
-                              case E:_ _/ =>[|G G' R|a' F' Ks' C D U]//.
+    elim=>[|V|L IH|q t Lc IH|p t Lc IH] CL//=;
+                              case E:_ _/ =>[|G G' R|q' t' Lc' D U|p' t' Lc' D U]//.
   - by move: E R => [<-] /H; constructor.
+  - by constructor=>//; apply H.
   - by constructor=>//; apply H.
   Qed.
   Hint Resolve l_unroll_monotone.
@@ -1967,7 +1988,7 @@ Section LTree.
   Proof.
     split.
     - elim: n =>[//|n Ih] in iG cG *; case: iG=>//= iL /lu_unfold.
-        by case E: _ _/ => [|L L' [|]|]//; move: E=>[->]; apply/Ih.
+        by case E: _ _/ => [|L L' [|]||]//; move: E=>[->]; apply/Ih.
     - elim: n =>// n Ih in iG cG *; case: iG=>//= G /Ih-H1.
         by apply/paco2_fold; constructor; left.
   Qed.
@@ -1995,12 +2016,13 @@ Section LTree.
     l_closed iL -> l_closed (lunroll n iL).
   Proof. by elim: n iL=>[|n Ih]//=; case=>//= iG /lopen_closed/Ih. Qed.
 
-  Lemma v_lty L : (exists v, L = l_var v) \/ (forall v, L != l_var v).
+  Lemma v_lty L : (exists v, L = l_jump v) \/ (forall v, L != l_jump v).
   Proof. by case: L; try (by right); move=>v;left;exists v. Qed.
 
-  CoFixpoint l_expand (l : l_ty) : rl_ty :=
+  CoFixpoint l_expand (l : lty) : rl_ty :=
     match lunroll (lrec_depth l) l with
-    | l_msg a T K => rl_msg a T (K.1, l_expand K.2)
+    | l_send q t L => rl_msg a_send q (t, l_expand L)
+    | l_recv p t L => rl_msg a_recv p (t, l_expand L)
     | _ => rl_end
     end.
 
@@ -2060,7 +2082,8 @@ Section LTree.
 
   Definition l_expand' L :=
     match L with
-    | l_msg a T K => rl_msg a T (K.1, l_expand K.2)
+    | l_send r t L => rl_msg a_send r (t, l_expand L)
+    | l_recv r t L => rl_msg a_recv r (t, l_expand L)
     | _ => rl_end
     end.
 
@@ -2086,7 +2109,10 @@ Section LTree.
       rewrite (lguarded_recdepth (m:=0) gG' _ (l_rec G)) //.
       apply/CIH; [by apply/l_guarded_unroll| by apply/lopen_closed].
     - move=>F T C//= cG gG; apply/paco2_fold.
-      rewrite (surjective_pairing C); constructor; right.
+      constructor; right.
+        by rewrite l_expand_once; apply CIH.
+    - move=>F T C//= cG gG; apply/paco2_fold.
+      constructor; right.
       by rewrite l_expand_once; apply CIH.
   Qed.
 
@@ -2100,7 +2126,10 @@ Section LTree.
         by apply/paco2_fold; constructor.
     - move=> G G' [/CIH-GU|//] /GU-H.
         by apply/paco2_fold; constructor; right.
-    - move=> a p t K C []//= LU /EqL_l_msg_inv[CC//= [-> [eql ->]]].
+    - move=> p t K C []//= LU /EqL_l_msg_inv[CC//= [-> [eql ->]]].
+      apply /paco2_fold; rewrite (surjective_pairing CC)//=; constructor; right.
+        by apply (CIH _ _ _ LU).
+    - move=> p t K C []//= LU /EqL_l_msg_inv[CC//= [-> [eql ->]]].
       apply /paco2_fold; rewrite (surjective_pairing CC)//=; constructor; right.
       by apply (CIH _ _ _ LU).
   Qed.
@@ -2113,7 +2142,7 @@ Section LTree.
     rewrite {2}(nrec_lrecdepthI Li).
     move: (getnr_nonrec Li) BND; case: (get_nr Li)=>//= v _ /eqP->.
     move: (lrec_depth Li)=>d {v Li Li'}.
-    move EQ: (n_rec d (l_var m))=>Li LT; move: {EQ LT}(conj EQ LT)=>H.
+    move EQ: (n_rec d (l_jump m))=>Li LT; move: {EQ LT}(conj EQ LT)=>H.
     move: (ex_intro (fun=>_) m (ex_intro (fun=>_) d H))=>{m d}H.
     move: Li Lr H; apply/paco2_acc=> r _.
     move=>/(_ _ _ (ex_intro _ _ (ex_intro _ _ (conj erefl _ ))))-CIH Li Lr.
@@ -2127,13 +2156,13 @@ Section LTree.
         by right; apply/CIH.
   Qed.
 
-  Fixpoint expand_env (e : seq (role * l_ty)) : {fmap role -> rl_ty} :=
+  Fixpoint expand_env (e : seq (role * lty)) : {fmap role -> rl_ty} :=
     match e with
     | [::] => [fmap]
     | (k, v) :: t => (expand_env t).[k <- l_expand v]
     end%fmap.
 
-  Lemma in_expanded_env (e : seq (role * l_ty)) p :
+  Lemma in_expanded_env (e : seq (role * lty)) p :
     (omap l_expand (find_cont e p) = (expand_env e).[? p])%fmap.
   Proof.
     elim: e=>//=; first by rewrite fnd_fmap0.
@@ -2172,9 +2201,9 @@ Section CProject_defs.
   Inductive Proj_ (p : role) (r : proj_rel) : proj_rel :=
   | prj_end G : ~ part_of p G -> WF G -> Proj_ p r G rl_end
   | prj_send q CG CL : p != q -> CG.1 = CL.1 -> r CG.2 CL.2 ->
-      Proj_ p r (rg_msg p q CG) (rl_msg l_send q CL)
+      Proj_ p r (rg_msg p q CG) (rl_msg a_send q CL)
   | prj_recv q CG CL : p != q -> CG.1 = CL.1 -> r CG.2 CL.2 ->
-      Proj_ p r (rg_msg q p CG) (rl_msg l_recv q CL)
+      Proj_ p r (rg_msg q p CG) (rl_msg a_recv q CL)
   | prj_cnt q s CG L:
       q != s -> p != q -> p != s ->
       part_of p CG.2 -> r CG.2 L ->
@@ -2196,13 +2225,13 @@ Section CProject_defs.
         (P : role -> rg_ty -> rl_ty -> Prop) :
     (forall G0, G0 = G -> rl_end = L -> ~ part_of p G0 -> WF G0 -> P p G0 rl_end) ->
     (forall q CG CL,
-       rg_msg p q CG = G -> rl_msg l_send q CL = L ->
+       rg_msg p q CG = G -> rl_msg a_send q CL = L ->
        p != q -> CG.1 = CL.1 -> Project p CG.2 CL.2 ->
-       P p (rg_msg p q CG) (rl_msg l_send q CL)) ->
+       P p (rg_msg p q CG) (rl_msg a_send q CL)) ->
     (forall q CG CL,
-       rg_msg q p CG = G -> rl_msg l_recv q CL = L ->
+       rg_msg q p CG = G -> rl_msg a_recv q CL = L ->
        p != q -> CG.1 = CL.1 -> Project p CG.2 CL.2 ->
-       P p (rg_msg q p CG) (rl_msg l_recv q CL)) ->
+       P p (rg_msg q p CG) (rl_msg a_recv q CL)) ->
     (forall (q s : role) CG L0,
         q != s -> p != q -> p != s ->
         rg_msg q s CG = G -> L0 = L ->
@@ -2226,7 +2255,7 @@ Section CProject_defs.
       p != q ->
       CG.1 = CL.1 ->
       IProj p CG.2 CL.2 ->
-      IProj p (ig_msg false p q CG) (rl_msg l_send q CL)
+      IProj p (ig_msg false p q CG) (rl_msg a_send q CL)
   | iprj_send2 q r CG L :
       p != r ->
       q != r ->
@@ -2236,7 +2265,7 @@ Section CProject_defs.
       p != q ->
       CG.1 = CL.1 ->
       IProj p CG.2 CL.2 ->
-      IProj p (ig_msg b q p CG) (rl_msg l_recv q CL)
+      IProj p (ig_msg b q p CG) (rl_msg a_recv q CL)
   | iprj_cnt q s CG L :
       q != s ->
       p != q ->
@@ -2261,7 +2290,7 @@ Section CProject_defs.
 
   Lemma IProj_send1_inv_aux F T C G L:
     IProj F G L -> G = (ig_msg false F T C) ->
-    F != T /\ (exists lC, L = rl_msg l_send T lC /\
+    F != T /\ (exists lC, L = rl_msg a_send T lC /\
     C.1 = lC.1 /\ IProj F C.2 lC.2).
   Proof.
   case=>//=.
@@ -2275,7 +2304,7 @@ Section CProject_defs.
 
   Lemma IProj_send1_inv F T C L:
     IProj F (ig_msg false F T C) L ->
-    F != T /\ (exists lC, L = rl_msg l_send T lC /\
+    F != T /\ (exists lC, L = rl_msg a_send T lC /\
     C.1 = lC.1 /\ IProj F C.2 lC.2).
   Proof.
   by move=> hp; apply: (IProj_send1_inv_aux hp).
@@ -2300,7 +2329,7 @@ Section CProject_defs.
 
  Lemma IProj_recv_inv_aux b F T C G L:
     IProj T G L -> G = (ig_msg b F T C) ->
-    F != T /\ (exists lC, L = rl_msg l_recv F lC /\
+    F != T /\ (exists lC, L = rl_msg a_recv F lC /\
     C.1 = lC.1 /\ IProj T C.2 lC.2).
   Proof.
   case =>//.
@@ -2316,7 +2345,7 @@ Section CProject_defs.
 
   Lemma IProj_recv_inv b F T C L:
     IProj T (ig_msg b F T C) L ->
-    F != T /\ (exists lC, L = rl_msg l_recv F lC /\
+    F != T /\ (exists lC, L = rl_msg a_recv F lC /\
     C.1 = lC.1 /\ IProj T C.2 lC.2).
   Proof.
   by move=> hp; apply: (IProj_recv_inv_aux hp).
@@ -2565,16 +2594,16 @@ Section ProjectionsCommute.
         case Egmsg: _ _/ =>[ | |F T t IG CG' gun]//=.
         move: gun=>[]//= gun _ _; move: Egmsg=> [<-<- eq3].
         move: (lu_unfold LU); rewrite -eqL eq3=>{}LU.
-        case Elmsg: _ _/LU=>[||a p tt LL LL' UL]//= .
-        move: Elmsg UL=>[<-<-<-<-] UL; rewrite -Fr//=.
+        case Elmsg: _ _/LU=>[||rr tt LL LL' UL|]//= .
+        move: Elmsg UL=>[<-<-<-] UL; rewrite -Fr//=.
         apply /paco2_fold; constructor; [by rewrite FT| by[]|right].
         by move: UL=> []//=; move: prj gun=>/eqP; move: cl gu; rewrite eq3//=; apply CIH.
       + case: ifP=> Tr Fr [eqL] /gunroll_unfold.
         * move: Tr=>/eqP-Tr; case Egmsg: _ _/ =>[ | |F T t IG CG' gun]//= _ _.
           move: gun=>[]//= gun; move: Egmsg=>[<-<- eq3].
           move: (lu_unfold LU); rewrite -eqL eq3=>{}LU.
-          case Elmsg: _ _/LU=>[||a p tt LL LL' UL]//= .
-          move: Elmsg UL=>[<-<-<-<-] UL; rewrite -Tr//=.
+          case Elmsg: _ _/LU=>[|||rr tt LL LL' UL]//= .
+          move: Elmsg UL=>[<-<-<-] UL; rewrite -Tr//=.
           apply /paco2_fold; constructor; [by rewrite eq_sym; rewrite FT| by []|right].
           by move: UL=> []//=; move: prj gun=>/eqP; move: cl gu; rewrite eq3//=; apply CIH.
         * case Egmsg: _ _/ =>[ | |F T t IG CG' gun]//=.
@@ -2625,7 +2654,7 @@ Section ProjectionsCommute.
       by apply/ic_proj.
   Qed.
 
-  Theorem expand_eProject (g : g_ty) (e : seq (role * l_ty))
+  Theorem expand_eProject (g : g_ty) (e : seq (role * lty))
     : eproject g = Some e ->
       eProject (ig_end (g_expand g)) (expand_env e).
   Proof.
@@ -2673,9 +2702,9 @@ Section GSemantics.
   Inductive step : act -> ig_ty -> ig_ty -> Prop :=
   (* Basic rules *)
   | st_send F T Ty G :
-      step (mk_act l_send F T Ty) (ig_msg false F T (Ty,G)) (ig_msg true F T (Ty,G))
+      step (mk_act a_send F T Ty) (ig_msg false F T (Ty,G)) (ig_msg true F T (Ty,G))
   | st_recv F T Ty G :
-      step (mk_act l_recv T F Ty) (ig_msg true F T (Ty,G)) G
+      step (mk_act a_recv T F Ty) (ig_msg true F T (Ty,G)) G
   (* Struct *)
   | st_amsg1 a F T Ty G0 G1:
       subject a != F ->
@@ -2699,11 +2728,11 @@ Section GSemantics.
   Lemma step_ind
         (P : forall (a : act) (i i0 : ig_ty), step a i i0 -> Prop):
     (forall F T Ty G,
-        P (mk_act l_send F T Ty) (ig_msg false F T (Ty,G)) (ig_msg true F T (Ty,G))
+        P (mk_act a_send F T Ty) (ig_msg false F T (Ty,G)) (ig_msg true F T (Ty,G))
           (st_send F T Ty G) )
     ->
     (forall F T Ty G,
-        P (mk_act l_recv T F Ty) (ig_msg true F T (Ty,G)) G (st_recv F T Ty G))
+        P (mk_act a_recv T F Ty) (ig_msg true F T (Ty,G)) G (st_recv F T Ty G))
     ->
     (forall a F T Ty G0 G1 (i : subject a != F) (i0 : subject a != T)
             (s : step a G0 G1),
@@ -2785,188 +2814,192 @@ Section LSemantics.
     end.
 
   Lemma doact_send (E : renv) p q t Lp :
-    (look E p = rl_msg l_send q (t,Lp)) ->
-    exists E', (do_act E (mk_act l_send p q t) = Some E').
+    (look E p = rl_msg a_send q (t,Lp)) ->
+    exists E', (do_act E (mk_act a_send p q t) = Some E').
   Proof.
     move=>H; rewrite /do_act/do_act_lt H !eq_refl/=.
       by exists E.[ p <- Lp]%fmap.
   Qed.
 
-  Definition do_act_l_ty (L: l_ty) (A : act) : option l_ty :=
+  Definition do_act_l_ty (L: lty) (A : act) : option lty :=
     let: (mk_act a p q t) := A in
     match lunroll (lrec_depth L) L with
-    | l_msg a' q' (t',Lp) =>
-      if (a == a') && (q == q') && (t == t')
+    | l_send q' t' Lp =>
+      if (a == a_send) && (q == q') && (t == t')
+      then Some Lp
+      else None
+    | l_recv q' t' Lp =>
+      if (a == a_recv) && (q == q') && (t == t')
       then Some Lp
       else None
     | _ => None
     end.
-(*
-Definition run_act_l_ty (L: l_ty) (A : act) : l_ty := odflt L (do_act_l_ty L A).
 
-Lemma do_act_works Li Lr A :
-  LUnroll Li Lr -> LUnroll (run_act_l_ty Li A) (run_act_lt Lr A).
-Proof.
-  rewrite /run_act_l_ty/run_act_lt/do_act_l_ty/do_act_lt/==>LU.
-  case: A=> a _ q l t; move: ((LUnroll_ind (lrec_depth Li) Li Lr).1 LU)=>LU'.
-  move: LU' LU.
-  case EQ: (lunroll (lrec_depth Li) Li)=> [| v | Li' | a' p C].
-  - by move=> /lunroll_end->.
-  - by move=>/(paco2_unfold l_unroll_monotone); case F: _ _ /.
-  - by move=>/= _ _; apply/(lunroll_inf _ EQ).
-  - move=>/(paco2_unfold l_unroll_monotone).
-    case F: _ _ / =>[||a0 p0 K0 C0 DOM UNR]//.
-    move: F DOM UNR=>[<-<-<-] DOM UNR{a0 p0 K0 EQ}.
-    case EQ: find_cont=>[[Ty L]|]//; last by rewrite (dom_none DOM EQ).
-    move: (dom DOM EQ)=>[{}Lr] EQ'; rewrite EQ'/=.
-    case: (boolP ((a == a') && (q == p) && (t == Ty)))=>//= _ _.
-    by move: (UNR _ _ _ _ EQ EQ')=>[].
-Qed.
+  Definition run_act_l_ty (L: lty) (A : act) : lty := odflt L (do_act_l_ty L A).
 
-Open Scope fmap_scope.
-(** lstep a Q P Q' P' is the 'step' relation <P, Q> ->^a <P', Q'> in Coq*)
-Inductive lstep : act -> renv * qenv -> renv * qenv -> Prop :=
-| ls_send t p q lb (P P' : renv) (Q Q' : qenv) :
-    Q' == enq Q (p, q) (lb, t) ->
-    do_act P (mk_act l_send p q lb t) = Some P' ->
-    lstep (mk_act l_send p q lb t) (P, Q) (P', Q')
-| ls_recv t p q lb (P P' : renv) (Q Q' : qenv) :
-    deq Q (p, q) == Some ((lb, t), Q') ->
-    do_act P (mk_act l_recv q p lb t) = Some P' ->
-    lstep (mk_act l_recv q p lb t) (P, Q) (P', Q')
-.
-Derive Inversion lstep_inv with (forall A P P', lstep A P P') Sort Prop.
+  Lemma do_act_works Li Lr A :
+    LUnroll Li Lr -> LUnroll (run_act_l_ty Li A) (run_act_lt Lr A).
+  Proof.
+    rewrite /run_act_l_ty/run_act_lt/do_act_l_ty/do_act_lt/==>LU.
+    case: A=> a _ q t; move: ((LUnroll_ind (lrec_depth Li) Li Lr).1 LU)=>LU'.
+    move: LU' LU.
+    case EQ: (lunroll (lrec_depth Li) Li)=> [| v | Li' | r t' Li' | r t' Li' ].
+    - by move=> /lunroll_end->.
+    - by move=>/(paco2_unfold l_unroll_monotone); case F: _ _ /.
+    - by move=>/= _ _; apply/(lunroll_inf _ EQ).
+    - move=>/(paco2_unfold l_unroll_monotone).
+      case F: _ _ / =>[|| p0 K0 C0 DOM UNR|p0 K0 C0 DOM UNR]//.
+      move: F DOM UNR=>[<-<-<-] DOM UNR{p0 K0 EQ}.
+      case: (boolP ((a == a_send) && (q == r) && (t == t')))=>//= _ _.
+        by move:UNR=>[].
+    - move=>/(paco2_unfold l_unroll_monotone).
+      case F: _ _ / =>[|| p0 K0 C0 DOM UNR|p0 K0 C0 DOM UNR]//.
+      move: F DOM UNR=>[<-<-<-] DOM UNR{p0 K0 EQ}.
+      case: (boolP ((a == a_recv) && (q == r) && (t == t')))=>//= _ _.
+        by move:UNR=>[].
+  Qed.
 
-Definition runnable (A : act) (P : renv * qenv) : bool :=
-  match do_act P.1 A with
-  | Some _ =>
-    let: mk_act a p q l t := A in
-    match a with
-    | l_send => true
-    | l_recv =>
-      match deq P.2 (q, p) with
-      | Some ((l', t'), Q) => (l == l') && (t == t')
-      | None => false
+  Open Scope fmap_scope.
+  (** lstep a Q P Q' P' is the 'step' relation <P, Q> ->^a <P', Q'> in Coq*)
+  Inductive lstep : act -> renv * qenv -> renv * qenv -> Prop :=
+  | ls_send t p q (P P' : renv) (Q Q' : qenv) :
+      Q' == enq Q (p, q) t ->
+      do_act P (mk_act a_send p q t) = Some P' ->
+      lstep (mk_act a_send p q t) (P, Q) (P', Q')
+  | ls_recv t p q (P P' : renv) (Q Q' : qenv) :
+      deq Q (p, q) == Some (t, Q') ->
+      do_act P (mk_act a_recv q p t) = Some P' ->
+      lstep (mk_act a_recv q p t) (P, Q) (P', Q')
+  .
+  Derive Inversion lstep_inv with (forall A P P', lstep A P P') Sort Prop.
+
+  Definition runnable (A : act) (P : renv * qenv) : bool :=
+    match do_act P.1 A with
+    | Some _ =>
+      let: mk_act a p q t := A in
+      match a with
+      | a_send => true
+      | a_recv =>
+        match deq P.2 (q, p) with
+        | Some (t', Q) => (t == t')
+        | None => false
+        end
       end
-    end
-  | None => false
-  end.
+    | None => false
+    end.
 
-Lemma lstep_runnable A P P' : lstep A P P' -> runnable A P.
-Proof.
-  by case=> Ty F T l {P P'}E E' Q Q' /eqP-QFT /=; case LOOK: look=>[|a p C]//;
-     case Cl: (C l)=>[[Ty' L]|]//; case: ifP=>//EQ _;
-     rewrite /runnable/= LOOK Cl EQ // QFT !eq_refl.
-Qed.
+  Lemma lstep_runnable A P P' : lstep A P P' -> runnable A P.
+  Proof.
+    by case=> Ty F T {P P'}E E' Q Q' /eqP-QFT/=;
+              case LOOK: look=>[|a r [t L]]//; case: ifP=>//EQ _;                                                          rewrite /runnable/= LOOK EQ // QFT !eq_refl.
+  Qed.
 
-Lemma lstep_eq A P P0 P1 : lstep A P P0 -> lstep A P P1 -> P0 = P1.
-Proof.
-  case=>Ty0 F0 T0 l0 {P P0}E E0 Q Q0 /eqP-QFT/=; case LOOK: look=>[|a p C]//;
-  case Cl: (C l0)=>[[Ty' L]|]//; case: ifP=>//EQ [<-];
-  elim/lstep_inv =>// _ Ty1 F1 T1 l1 E' E1 Q' Q1 /eqP-QFT'/= ACT EQ1 EQ2 EQ3;
-  move: EQ1 EQ2 EQ3 ACT QFT QFT'=>[->->->->] [->->] _ {F1 T1 l1 Ty1 E' Q' P1};
-  rewrite LOOK Cl EQ=>[][<-]->.
-  - by move=>->.
-  - by move=>[->].
-Qed.
+  Lemma lstep_eq A P P0 P1 : lstep A P P0 -> lstep A P P1 -> P0 = P1.
+  Proof.
+    case=>Ty0 F0 T0 {P P0}E E0 Q Q0 /eqP-QFT/=; case LOOK: look=>[|a p [t L]]//;
+      case: ifP=>//EQ [<-]; elim/lstep_inv =>//_
+           Ty1 F1 T1 E' E1 Q' Q1 /eqP-QFT'/= ACT EQ1 EQ2 EQ3;
+      move: EQ1 EQ2 EQ3 ACT QFT QFT'=>[->->->] [->->] _ {F1 T1 Ty1 E' Q' P1};
+      rewrite LOOK EQ=>[][<-]->.
+    - by move=>->.
+    - by move=>[->].
+  Qed.
 
-Definition do_queue (Q : qenv) (A : act) : qenv :=
-  match A with
-  | mk_act l_send F T l Ty => enq Q (F, T) (l, Ty)
-  | mk_act l_recv F T l Ty =>
-    match deq Q (T, F) with
-    | Some (_, Q') => Q'
-    | None => Q
-    end
-  end.
+  Definition do_queue (Q : qenv) (A : act) : qenv :=
+    match A with
+    | mk_act a_send F T Ty => enq Q (F, T) Ty
+    | mk_act a_recv F T Ty =>
+      match deq Q (T, F) with
+      | Some (_, Q') => Q'
+      | None => Q
+      end
+    end.
 
-(* Attempts to run a step, does nothing if it cannot run *)
-Definition run_step (A : act) (P : renv * qenv) : renv * qenv :=
-  match do_act P.1 A with
-  | Some E' => (E', do_queue P.2 A)
-  | _ => P
-  end.
+  (* Attempts to run a step, does nothing if it cannot run *)
+  Definition run_step (A : act) (P : renv * qenv) : renv * qenv :=
+    match do_act P.1 A with
+    | Some E' => (E', do_queue P.2 A)
+    | _ => P
+    end.
 
-(* Lemma run_step 'makes sense' *)
-Lemma run_step_sound A P : runnable A P -> lstep A P (run_step A P).
-Proof.
-  case: P => E Q.
-  rewrite /runnable /=; case E_doact: (do_act _ _)=>[E'|//].
-  case: A E_doact=> [[|] p q l t E_doact]/=.
-  - by move=> _; rewrite /run_step E_doact; constructor=>//.
-  - case E_deq: (deq _ _) =>[[[l' t'] Q']|//].
-    case: (boolP ((l == l') && _)) =>[/andP-[/eqP-ll' /eqP-tt']|//] _.
-    move: ll' tt' E_deq =><-<- E_deq.
-    rewrite /run_step E_doact /= E_deq.
-      by constructor =>//; first by apply/eqP.
-Qed.
+  (* Lemma run_step 'makes sense' *)
+  Lemma run_step_sound A P : runnable A P -> lstep A P (run_step A P).
+  Proof.
+    case: P => E Q.
+    rewrite /runnable /=; case E_doact: (do_act _ _)=>[E'|//].
+    case: A E_doact=> [[|] p q t E_doact]/=.
+    - by move=> _; rewrite /run_step E_doact; constructor=>//.
+    - case E_deq: (deq _ _) =>[[t' Q']|//] [/eqP-tt'].
+      rewrite /run_step E_doact/= E_deq; constructor=>//=.
+        by rewrite tt' E_deq.
+  Qed.
 
-Lemma run_step_compl A P P' : lstep A P P' -> P' = run_step A P.
-Proof.
-  by move=> ST; move: (lstep_runnable ST)=>/run_step_sound/(lstep_eq ST).
-Qed.
+  Lemma run_step_compl A P P' : lstep A P P' -> P' = run_step A P.
+  Proof.
+      by move=> ST; move: (lstep_runnable ST)=>/run_step_sound/(lstep_eq ST).
+  Qed.
 
-Definition rel_trc := trace act -> renv*qenv -> Prop.
-Inductive l_lts_ (r : rel_trc) : rel_trc :=
-| lt_end E :
-    (forall p, look E p = rl_end) ->
-    @l_lts_ r (tr_end _) (E, [fmap])
-| lt_next a t P P' :
-    lstep a P P' ->
-    r t P' ->
-    @l_lts_ r (tr_next a t) P.
-Hint Constructors l_lts_.
-Lemma l_lts_monotone : monotone2 l_lts_.
-Proof. pmonauto. Qed.
-Hint Resolve l_lts_monotone : paco.
+  Definition rel_trc := trace act -> renv*qenv -> Prop.
+  Inductive l_lts_ (r : rel_trc) : rel_trc :=
+  | lt_end E :
+      (forall p, look E p = rl_end) ->
+      @l_lts_ r (tr_end _) (E, [fmap])
+  | lt_next a t P P' :
+      lstep a P P' ->
+      r t P' ->
+      @l_lts_ r (tr_next a t) P.
+  Hint Constructors l_lts_.
+  Lemma l_lts_monotone : monotone2 l_lts_.
+  Proof. pmonauto. Qed.
+  Hint Resolve l_lts_monotone : paco.
 
-Definition l_lts t L := paco2 l_lts_ bot2 t L.
-Derive Inversion llts_inv with (forall tr G, l_lts tr G) Sort Prop.
+  Definition l_lts t L := paco2 l_lts_ bot2 t L.
+  Derive Inversion llts_inv with (forall tr G, l_lts tr G) Sort Prop.
 
-Definition rty_trc := trace act -> rl_ty -> Prop.
-Inductive l_trc_ (p : role) (r : rty_trc) : rty_trc :=
-| l_trc_end : l_trc_ p r (tr_end _) rl_end
-| l_trc_msg A TR L L' :
-    subject A == p -> do_act_lt L A = Some L' ->
-    r TR L' ->
-    l_trc_ p r (tr_next A TR) L
-.
-Lemma l_trc_monotone p : monotone2 (l_trc_ p).
-Proof.
-  move=>TR cL r r' Htrc MON; move: Htrc; case.
-  - by constructor.
-  - move=>A TR0 L L' Hsubj Hact /MON.
-    by move: Hsubj Hact; apply l_trc_msg.
-Qed.
+  Definition rty_trc := trace act -> rl_ty -> Prop.
+  Inductive l_trc_ (p : role) (r : rty_trc) : rty_trc :=
+  | l_trc_end : l_trc_ p r (tr_end _) rl_end
+  | l_trc_msg A TR L L' :
+      subject A == p -> do_act_lt L A = Some L' ->
+      r TR L' ->
+      l_trc_ p r (tr_next A TR) L
+  .
+  Lemma l_trc_monotone p : monotone2 (l_trc_ p).
+  Proof.
+    move=>TR cL r r' Htrc MON; move: Htrc; case.
+    - by constructor.
+    - move=>A TR0 L L' Hsubj Hact /MON.
+        by move: Hsubj Hact; apply l_trc_msg.
+  Qed.
 
-Definition l_trc p t L := paco2 (l_trc_ p) bot2 t L.
+  Definition l_trc p t L := paco2 (l_trc_ p) bot2 t L.
 
-Definition trc_rel := trace act -> trace act -> Prop.
-Inductive subtrace_ (p : role) (r : trc_rel) : trc_rel :=
-| subtrace_end : subtrace_ p r (tr_end _) (tr_end _)
-| subtrace_skip A TRp TR :
-    subject A != p ->
-    r TRp TR ->
-    subtrace_ p r TRp (tr_next A TR)
-| subtrace_msg A TRp TR :
-    subject A == p ->
-    r TRp TR ->
-    subtrace_ p r (tr_next A TRp) (tr_next A TR)
-.
-Lemma subtrace_monotone p : monotone2 (subtrace_ p).
-Proof.
+  Definition trc_rel := trace act -> trace act -> Prop.
+  Inductive subtrace_ (p : role) (r : trc_rel) : trc_rel :=
+  | subtrace_end : subtrace_ p r (tr_end _) (tr_end _)
+  | subtrace_skip A TRp TR :
+      subject A != p ->
+      r TRp TR ->
+      subtrace_ p r TRp (tr_next A TR)
+  | subtrace_msg A TRp TR :
+      subject A == p ->
+      r TRp TR ->
+      subtrace_ p r (tr_next A TRp) (tr_next A TR)
+  .
+  Lemma subtrace_monotone p : monotone2 (subtrace_ p).
+  Proof.
   move=>TR cL r r' Htrc MON; move: Htrc; case.
   - by constructor.
   - move=> A TRp TR0 Hsubj /MON; move: Hsubj.
-    by apply: subtrace_skip.
+      by apply: subtrace_skip.
   - move=> A TRp TR0 Hsubj /MON; move: Hsubj.
-    by apply: subtrace_msg.
-Qed.
-Definition subtrace p T0 T1 := paco2 (subtrace_ p) bot2 T0 T1.
-Hint Constructors EqL_.
-Hint Resolve EqL_monotone.
-Hint Resolve EqL_refl.
+      by apply: subtrace_msg.
+  Qed.
+  Definition subtrace p T0 T1 := paco2 (subtrace_ p) bot2 T0 T1.
+  Hint Constructors EqL_.
+  Hint Resolve EqL_monotone.
+  Hint Resolve EqL_refl.
 
-Notation cfg := (renv * qenv)%type.
-*)
+  Notation cfg := (renv * qenv)%type.
+
 End LSemantics.

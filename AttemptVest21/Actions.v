@@ -5,12 +5,12 @@ Import Prenex Implicits.
 
 Require Import AtomSets.
 
-Inductive l_act := l_send | l_recv.
+Inductive l_act := a_send | a_recv.
 
 Definition dual_act a :=
   match a with
-  | l_send => l_recv
-  | l_recv => l_send
+  | a_send => a_recv
+  | a_recv => a_send
   end.
 
 Create HintDb mpst.
@@ -21,8 +21,8 @@ Hint Rewrite dual_actK : mpst.
 
 Definition eq_lact a b :=
   match a, b with
-  | l_send, l_send
-  | l_recv, l_recv => true
+  | a_send, a_send
+  | a_recv, a_recv => true
   | _, _ => false
   end.
 
