@@ -3342,8 +3342,8 @@ Section TraceEquiv.
   Proof. by rewrite /look fnd_set eq_refl. Qed.
 
   Lemma Projection_send F T t G P :
-      Projection (ig_msg false F T (t,G)) P ->
-      Projection (ig_msg true F T (t,G)) (run_step (mk_act a_send F T t) P).
+    Projection (ig_msg false F T (t,G)) P ->
+    Projection (ig_msg true F T (t,G)) (run_step (mk_act a_send F T t) P).
   Proof.
     move=>PRJ.
     move: (IProj_send1_inv (PRJ.1 F))=>[FT [[tF LF] [llF //=[ttF IPRJF]] ]].
@@ -3366,31 +3366,22 @@ Section TraceEquiv.
 
 (*here*)
 
-  Lemma Projection_recv C l Ty G :
-    C l = Some (Ty, G) ->
-    forall F T P,
-      Projection simple_co_merge (ig_msg (Some l) F T C) P ->
-      Projection simple_co_merge G (run_step (mk_act l_recv T F l Ty) P).
+  Lemma Projection_recv F T t G P:
+    Projection (ig_msg true F T (t,G)) P ->
+    Projection G (run_step (mk_act a_recv T F t) P).
   Proof.
-    move=>Cl F T P PRJ.
-    move: (qProject_Some_inv PRJ.2)=>[TyQ] [GQ] [Q'].
-    rewrite Cl=> [][] [<-<-] [/eqP-DEQ] QPRJ {TyQ GQ}.
-    move: (IProj_recv_inv (PRJ.1 T))=>[FT] [lCT] [ET] [DOMT] ALLT.
-    move: (IProj_send2_inv (PRJ.1 F) FT)=>[_] [lCF] [Ty'] [EF] [DOMF] ALLF.
-    move: (dom DOMF Cl) (dom DOMT Cl) => [LF lCFl] [LT lCTl].
-    move: lCFl; rewrite EF=>H; move: H EF=>[-> _] lCFl.
-    rewrite /run_step/= ET lCTl !eq_refl/= DEQ.
-    split=>//.
+    move=>PRJ.
+    move: (qProject_true_inv PRJ.2)=>[Q [/eqP-dq qpro]].
+    move: (IProj_recv_inv (PRJ.1 T))=>[FT  [[tT LT] [llT /=[ttT IPRJT]]]].
+    move: (IProj_send2_inv (PRJ.1 F) FT)=>[_ /=IPRJF].
+    rewrite /run_step/= llT ttT !eq_refl dq/=.
+    split=>//=.
     move=>p; case: (boolP (p == F))=>[/eqP->{p}|];
              [|case: (boolP (p == T))=>[/eqP->{p} _|pT pF]].
-    - rewrite look_comm; last by rewrite eq_sym.
-      by apply: (ALLF _ _ _ _ Cl lCFl).
-    - by rewrite look_same; apply: (ALLT _ _ _ _ Cl lCTl).
-    - move: (IProj_send2_inv (PRJ.1 p) pT)=>[_] [lCp] [{}Ty'] [lCpl] [DOMp] ALLp.
-      move: (dom DOMp Cl)=>[L'].
-      rewrite lCpl=>[[ETy']] _ {L'}; move: ETy' lCpl=>-> lCpl.
-      rewrite look_comm //; last by rewrite eq_sym.
-      by apply/(ALLp _ _ _ _ Cl lCpl).
+    - by rewrite look_comm; [|rewrite eq_sym].
+    - by rewrite look_same.
+    - move: (IProj_send2_inv (PRJ.1 p) pT)=>[_].
+      by rewrite look_comm //= eq_sym.
   Qed.
 
   Lemma do_actC E0 E1 E2 A1 A2 :
