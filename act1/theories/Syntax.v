@@ -37,57 +37,57 @@ Inductive exp : Set :=
 .
 
 (* CoInductive just because we don't need an induction principle *)
-CoInductive polarity := Pos | Neg. (* TODO really replace this by bool *)
-Definition dual_pol p := if p is Pos then Neg else Pos.
+(* CoInductive polarity := Pos | Neg. (* TODO really replace this by bool *) *)
+(* Definition dual_pol p := if p is Pos then Neg else Pos. *)
 
-Definition eq_polarity (p p' : polarity) : bool :=
-  match p, p' with
-  | Pos, Pos
-  | Neg, Neg => true
-  | _, _ => false
-  end.
+(* Definition eq_polarity (p p' : polarity) : bool := *)
+(*   match p, p' with *)
+(*   | Pos, Pos *)
+(*   | Neg, Neg => true *)
+(*   | _, _ => false *)
+(*   end. *)
 
-Lemma polarity_reflect : Equality.axiom eq_polarity.
-Proof.
-    by do !case ; constructor.
-Qed.
+(* Lemma polarity_reflect : Equality.axiom eq_polarity. *)
+(* Proof. *)
+(*     by do !case ; constructor. *)
+(* Qed. *)
 
-Definition polarity_eqMixin := EqMixin polarity_reflect.
-Canonical polarity_eqType := EqType _ polarity_eqMixin.
+(* Definition polarity_eqMixin := EqMixin polarity_reflect. *)
+(* Canonical polarity_eqType := EqType _ polarity_eqMixin. *)
 
-(* polarities have a simple order (e.g. + < -) *)
+(* (* polarities have a simple order (e.g. + < -) *) *)
 
-Definition ltn_pol (p p' : polarity) : bool :=
-  match p, p' with
-  | Pos, Neg => true
-  | _, _ => false
-  end.
+(* Definition ltn_pol (p p' : polarity) : bool := *)
+(*   match p, p' with *)
+(*   | Pos, Neg => true *)
+(*   | _, _ => false *)
+(*   end. *)
 
-Lemma ltn_pol_irreflexive : irreflexive ltn_pol. (* x : ltn_pol x x = false. *)
-Proof.
-    by case.
-Qed.
+(* Lemma ltn_pol_irreflexive : irreflexive ltn_pol. (* x : ltn_pol x x = false. *) *)
+(* Proof. *)
+(*     by case. *)
+(* Qed. *)
 
-Lemma ltn_pol_transitive : transitive ltn_pol.
-Proof.
-  by do !case.
-Qed.
+(* Lemma ltn_pol_transitive : transitive ltn_pol. *)
+(* Proof. *)
+(*   by do !case. *)
+(* Qed. *)
 
-Lemma ltn_pol_total (a b : polarity) : [|| ltn_pol a b, a == b | ltn_pol b a].
-Proof.
-  move: a b.
-  case ; case => //.
-Qed.
+(* Lemma ltn_pol_total (a b : polarity) : [|| ltn_pol a b, a == b | ltn_pol b a]. *)
+(* Proof. *)
+(*   move: a b. *)
+(*   case ; case => //. *)
+(* Qed. *)
 
-Definition polarity_ordMixin : Ordered.mixin_of polarity_eqType :=
-  OrdMixin
-    ltn_pol_irreflexive
-    ltn_pol_transitive
-    ltn_pol_total.
-Canonical Structure polarity_ordType := OrdType _ polarity_ordMixin.
+(* Definition polarity_ordMixin : Ordered.mixin_of polarity_eqType := *)
+(*   OrdMixin *)
+(*     ltn_pol_irreflexive *)
+(*     ltn_pol_transitive *)
+(*     ltn_pol_total. *)
+(* Canonical Structure polarity_ordType := OrdType _ polarity_ordMixin. *)
 
-Definition channel := (CH.var * polarity)%type.
-Definition ch x p : channel := (x, p).
+Definition channel := CH.var.
+(* Definition ch x p : channel := (x, p). *)
 
 Inductive proc : Set :=
 | send : channel -> exp -> proc -> proc
@@ -110,6 +110,42 @@ Inductive lc_exp : exp -> Prop :=
   | lc_vare a: lc_exp (V(EV.Free a))
 .
 Hint Constructors lc_exp.
+
+(* free variables in things *)
+
+Definition fv_ch (k : channel) : seq CH.atom :=
+  match k with
+  | CH.Free a => [::a]
+  | _ => [::]
+  end.
+
+Definition fv_exp (e : exp) : seq EV.atom :=
+  match e with
+    | V (EV.Free a) => [::a]
+    | _ => [::]
+  end.
+
+Fixpoint fv_e (P : proc) : seq EV.atom :=
+  match P with
+  | nu P
+  | bang P
+  | receive _ P => fv_e P
+  | send _ e P => fv_exp e ++ fv_e P
+  | ife e P Q => fv_exp e ++ fv_e P ++ fv_e Q
+  | par P Q => fv_e P ++ fv_e Q
+  | inact => [::]
+  end.
+
+Fixpoint fv (P : proc) : seq CH.atom :=
+  match P with
+  | send k e P => fv_ch k ++ fv P
+  | receive k P => fv_ch k ++ fv P
+  | ife e P Q => fv P ++ fv Q
+  | par P Q => fv P ++ fv Q
+  | inact => [::]
+  | nu P => fv P
+  | bang P => fv P
+  end.
 
 
 (* Open a bound variable in an expression *)
@@ -137,14 +173,11 @@ Definition open_e0 P u :={ope 0~>u} P.
 (* for processes *)
 
 Inductive lc_ch : channel -> Prop :=
-| lc_channel a pol: lc_ch (CH.Free a, pol).
+| lc_channel a: lc_ch (CH.Free a).
 Hint Constructors lc_ch.
 
-
-Definition opk (n : nat) (u : CH.var) (ch : channel) : channel :=
-  match ch with
-  | (k, p) => (CH.open_var id n u k, p)
-  end.
+Definition opk (n : nat) (u : CH.var) (k : channel) : channel :=
+  CH.open_var id n u k.
 
 Fixpoint open_k (n : nat) (ko : CH.var) (P : proc) : proc :=
   match P with
@@ -209,9 +242,9 @@ where "P === Q" := (congruent P Q).
 
 Reserved Notation "P --> Q" (at level 70).
 Inductive red : proc -> proc -> Prop :=
-| r_com (k : CH.atom) p pd e P Q:
-    lc P -> (*body Q ->*) dual_pol p == pd -> (* use open_e instead of ope *)
-    (par (send (ch k p) e P) (receive ((ch k pd)) Q)) --> (par P ({ope 0 ~> e} Q))
+| r_com (k : CH.atom) e P Q:
+    lc P -> (*body Q ->*)  (* use open_e instead of ope *)
+    (par (send k e P) (receive k Q)) --> (par P ({ope 0 ~> e} Q))
 
 | r_cong P P' Q Q' :
     lc P -> lc Q ->
