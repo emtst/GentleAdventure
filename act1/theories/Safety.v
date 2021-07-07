@@ -304,8 +304,8 @@ Definition comm (t : tp) : tp :=
   | input _ T => T
   | output _ T => T
   | ended => t
+  | bottom => t
   end.
-
 
 Lemma dual_comm T : dual (comm T) = comm (dual T).
 Proof. by case: T. Qed.

@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
+Require Import FinMap.finmap.
 Require Import FinMap.ordtype.
 
 Require Import MiniEMTST.AtomScopes.
@@ -28,6 +29,101 @@ Definition completed (D : tp_env) : Prop :=
 
 Definition chan_of_entry (c : tp_env_entry) : channel := c. (* TODO REMOVE *)
 
+(* compatible *)
+
+(* lift dual to option *)
+Definition option_dual (d : option tp) : option tp :=
+  match d with
+  | None => None
+  | Some T => Some (dual T)
+  end.
+
+Inductive compatible : forall (E1 E2 : tp_env), Prop :=
+| compatible_disj E1 E2: disjoint E1 E2 -> compatible E1 E2
+| compatible_add E1 E2 k t: compatible E1 E2 -> compatible (add k t E1) (add k (dual t) E2)
+.
+Hint Constructors compatible.
+
+Definition compatible_nil : compatible nil nil.
+  apply compatible_disj.
+  apply disjoint_nil.
+Defined.
+
+Lemma compatibleC E1 E2 : compatible E1 E2 -> compatible E2 E1.
+  elim=>//.
+  move=> E0 E3.
+  rewrite disjointC.
+  apply compatible_disj.
+  move=> E0 E3 k t D. (* D1 D2. *)
+  move/compatible_add.
+  move=>H.
+  have H':= H k (dual t).
+  move:H'.
+  by rewrite dual_is_dual.
+Qed.
+
+Definition compose (E1 E2 : tp_env) : tp_env :=
+  if (E1, E2) is (Def f1, Def f2) then
+    let: (f1, f12, f2) := spl f1 f2 in
+    Def (fcat f1 (fcat (fmap_map (fun _ => bottom) f12) f2))
+  else
+    undef_env.
+
+Notation "A 'o' B" := (compose A B) (at level 60, right associativity).  (* : env_scope. *)
+
+Lemma compose_undef D:
+  D o undef_env = undef_env.
+Proof.
+  elim D=>//.
+Qed.
+
+Lemma composeC D D': D o D' = D' o D.
+Proof.
+  elim D=>// ; elim D'=>// f f'.
+  (* Disjointness *)
+  have: all_disj (spl f f') by apply: disj_spl.
+  move=>/andP-[/andP-[di dd] id].
+  have dmi :
+    disj (diff f' f) (fmap_map (fun _ : tp_eqType => bottom) (intersect f f'))
+    by rewrite /disj supp_map -/(disj _ _) disjC.
+  have mid :
+    disj (fmap_map (fun _ : tp_eqType => bottom) (intersect f f')) (diff f f')
+    by rewrite /disj supp_map -/(disj _ _) disjC.
+  have dmid :
+    disj (fcat (diff f' f)
+               (fmap_map (fun _ : tp_eqType => bottom) (intersect f f')))
+         (diff f f')
+    by rewrite disjC disj_fcat dd Bool.andb_true_l /disj supp_map.
+  have eq_supp :
+    supp (intersect f' f) == supp (intersect f f')
+    by rewrite (supp_intersect f' f).
+  (* End disjointness *)
+  rewrite /compose/spl.
+  rewrite (fmap_const_eq bottom eq_supp).
+    by rewrite -fcatA // fcatC // [fcat (diff f' f) _]fcatC.
+Qed.
+
+(* some properties of compatible environments and of defined envirnments *)
+Lemma compatible_hd k t t' E1 E2:
+  def (add k t E1) -> def (add k t' E2) -> t == dual t'
+  -> compatible E1 E2 -> compatible (add k t E1) (add k t' E2).
+Proof.
+  elim: E1; elim: E2 => // => f f0.
+  move=>D1 D2.
+  move/eqP=>R. rewrite R.
+  move/compatible_add.
+  move=>H.
+  have H':= H k (dual t'). move:H'.
+  by rewrite dual_is_dual.
+Qed.
+
+Lemma compatible_swap_left k k' s t E1 E2:
+  def (add k t (add k' s E1)) -> def E2 -> (* we may not need/want these*)
+  compatible (add k t (add k' s E1)) E2 ->
+  compatible (add k' s (add k t E1)) E2.
+Proof. by rewrite add_swap. Qed.
+
+(* typing judgment *)
 
 Inductive oft : sort_env -> proc -> tp_env -> Prop :=
 | t_send : forall G kt e P D S T,

@@ -299,6 +299,7 @@ Inductive tp : Set :=
   | input : sort -> tp -> tp
   | output : sort -> tp -> tp
   | ended : tp
+  | bottom : tp
 .
 
 Fixpoint dual (T : tp) : tp :=
@@ -306,18 +307,26 @@ Fixpoint dual (T : tp) : tp :=
   | input s T => output s (dual T)
   | output s T => input s (dual T)
   | ended => ended
+  | bottom => bottom
   end
 .
+
+Lemma dual_is_dual t : dual (dual t) = t.
+  elim t=>// ; rewrite/dual ; move=>//; rewrite-/dual ;
+    do ? (move=> s t0 =>->) ;
+    do ? (move=> t0 R' t1 =>->) ;
+    rewrite ?R' ;
+   easy.
+Qed.
 
 Fixpoint eq_tp (T T': tp) : bool :=
   match T, T' with
   | input s T, input s' T' => eq_sort s s' && eq_tp T T'
   | output s T, output s' T' => eq_sort s s' && eq_tp T T'
   | ended, ended => true
+  | bottom, bottom => true
   | _, _ => false
   end.
-
-
 
 Lemma eq_imp_eq : forall x y, eq_tp x y -> x = y.
 Proof. Admitted.
