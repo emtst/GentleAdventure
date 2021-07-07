@@ -45,6 +45,8 @@ Module Type ATOMSCOPE.
   | Bound of nat (* a bound variable *)
   .
 
+  Parameter fv : var -> seq atom.
+
   (* get bound variable that is free under 'k' binders *)
   Definition get_free_bound (k : nat) (v : var) : option nat :=
     match v with
@@ -70,20 +72,20 @@ Module Type ATOMSCOPE.
     | _ => f y
     end.
 
-  Inductive lc_var : var -> Prop :=
-  | lc_free : forall a, lc_var (Free a).
-  Hint Constructors lc_var.
+  Inductive lc : var -> Prop :=
+  | lc_free : forall a, lc (Free a).
+  Hint Constructors lc.
 
-  Definition lcb_var v : bool :=
+  Definition lcb v : bool :=
     match v with
     | Free _ => true
     | _ => false
     end.
 
-  Parameter getfree_lc : forall v, get_free_bound 0 v == None -> lc_var v.
-  Parameter lc_getfree : forall v, lc_var v -> get_free_bound 0 v == None.
+  Parameter getfree_lc : forall v, get_free_bound 0 v == None -> lc v.
+  Parameter lc_getfree : forall v, lc v -> get_free_bound 0 v == None.
 
-  Parameter lc_varP : forall v, reflect (lc_var v) (lcb_var v).
+  Parameter lcP : forall v, reflect (lc v) (lcb v).
 
 End ATOMSCOPE.
 
@@ -121,15 +123,21 @@ Module AtomScope (A : ATOM) : ATOMSCOPE.
   | Bound of nat (* a bound variable *)
   .
 
+  Definition fv (v : var) : seq atom :=
+    match v with
+    | Free a => [::a]
+    | _ => [::]
+    end.
+
   Definition get_free_bound (k : nat) (v : var) : option nat :=
     match v with
     | Bound k' => if k' >= k then Some (k' - k) else None
     | _ => None
     end.
 
-  Inductive lc_var : var -> Prop :=
-  | lc_free : forall a, lc_var (Free a).
-  Hint Constructors lc_var.
+  Inductive lc : var -> Prop :=
+  | lc_free : forall a, lc (Free a).
+  Hint Constructors lc.
 
   Definition eq_var (a b : var) : bool :=
     match a, b with
@@ -154,19 +162,19 @@ Module AtomScope (A : ATOM) : ATOMSCOPE.
     | _ => f y
     end.
 
-  Definition lcb_var v : bool :=
+  Definition lcb v : bool :=
     match v with
     | Free _ => true
     | _ => false
     end.
 
-  Lemma getfree_lc v : get_free_bound 0 v == None -> lc_var v.
+  Lemma getfree_lc v : get_free_bound 0 v == None -> lc v.
   Proof. by case v. Qed.
 
-  Lemma lc_getfree v : lc_var v -> get_free_bound 0 v == None.
+  Lemma lc_getfree v : lc v -> get_free_bound 0 v == None.
   Proof. by case. Qed.
 
-  Lemma lc_varP v : reflect (lc_var v) (lcb_var v).
+  Lemma lcP v : reflect (lc v) (lcb v).
   Proof. case:v=>/= x; do ! constructor; move=>F; case Eq: _ / F =>//. Qed.
 
 End AtomScope.
