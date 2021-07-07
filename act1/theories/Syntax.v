@@ -193,6 +193,9 @@ Notation "{opk k ~> u } t" := (open_k k u t) (at level 67) : sr_scope.
 
 Definition open_k0 P u :={opk 0~>u} P.
 
+(* TODO delete if not used *)
+(* Definition body P := forall (L : seq EV.atom) x, x \notin L -> lc (open_c0 P (LC.Free x)). *)
+
 Inductive lc : proc -> Prop :=
 | lc_send : forall k e P,
     lc_ch k ->
@@ -243,7 +246,7 @@ where "P === Q" := (congruent P Q).
 Reserved Notation "P --> Q" (at level 70).
 Inductive red : proc -> proc -> Prop :=
 | r_com (k : CH.atom) e P Q:
-    lc P -> (*body Q ->*)  (* use open_e instead of ope *)
+    lc P -> (* body Q -> *)  (* use open_e instead of ope *)
     (par (send k e P) (receive k Q)) --> (par P ({ope 0 ~> e} Q))
 
 | r_cong P P' Q Q' :
@@ -253,7 +256,7 @@ Inductive red : proc -> proc -> Prop :=
     Q' === Q ->
     P --> Q
 
-| r_scop_ch P P':
+| r_scop P P':
     (forall (L : seq CH.atom) k,
         k \notin L -> (open_k0 P (CH.Free k)) --> (open_k0 P' (CH.Free k))) ->
     nu P --> nu P'
@@ -272,89 +275,3 @@ Inductive red_st : proc -> proc -> Prop :=
 | r_done P : P -->* P
 | r_step P Q R: P --> Q -> Q -->* R -> P -->* R
 where "P -->* Q" := (red_st P Q).
-
-(** types **)
-
-Inductive sort : Set :=
-  | boole : sort. (* boolean expression *)
-
-Fixpoint eq_sort (s s' : sort) : bool :=
-  match s, s' with
-  | boole, boole => true
-  (* | _, _ => false *) (* there is only one type for now *)
-  end.
-
-Lemma eq_sortP : Equality.axiom eq_sort.
-Proof.
-  move=> x y.
-  apply: (iffP idP)=>[|<-].
-  by elim x ; elim y.
-  by elim x.
-Qed.
-
-Canonical sort_eqMixin := EqMixin eq_sortP.
-Canonical sort_eqType := Eval hnf in EqType sort sort_eqMixin.
-
-Inductive tp : Set :=
-  | input : sort -> tp -> tp
-  | output : sort -> tp -> tp
-  | ended : tp
-  | bottom : tp
-.
-
-Fixpoint dual (T : tp) : tp :=
-  match T with
-  | input s T => output s (dual T)
-  | output s T => input s (dual T)
-  | ended => ended
-  | bottom => bottom
-  end
-.
-
-Lemma dual_is_dual t : dual (dual t) = t.
-  elim t=>// ; rewrite/dual ; move=>//; rewrite-/dual ;
-    do ? (move=> s t0 =>->) ;
-    do ? (move=> t0 R' t1 =>->) ;
-    rewrite ?R' ;
-   easy.
-Qed.
-
-Fixpoint eq_tp (T T': tp) : bool :=
-  match T, T' with
-  | input s T, input s' T' => eq_sort s s' && eq_tp T T'
-  | output s T, output s' T' => eq_sort s s' && eq_tp T T'
-  | ended, ended => true
-  | bottom, bottom => true
-  | _, _ => false
-  end.
-
-Lemma eq_imp_eq : forall x y, eq_tp x y -> x = y.
-Proof. Admitted.
-(*   apply tp_sort_mutind ; intros; try destruct y  ; try destruct s'; try easy ; *)
-(*   inversion H1 ; apply Bool.andb_true_iff in H3 ; destruct H3 ; *)
-(*   try(move:H3 ; move/H0=>H3 ; move:H2 ; move/H=>H4 ; by rewrite H3 H4). *)
-(* Qed. (* more ssreflect can make this better *) *)
-
-Lemma eq_tp_refl x : eq_tp x x.
-Proof.
-  elim x ;
-    try
-      move=>s t H ;
-      rewrite/eq_tp=>// ;
-      fold eq_tp ;
-      rewrite H=>//= ;
-      elim s=>//.
-Qed.
-
-
-Lemma eq_tpP : Equality.axiom eq_tp.
-Proof.
-  move=>x y.
-  apply: (iffP idP)=>[|<-].
-  apply eq_imp_eq.
-  apply eq_tp_refl.
-Qed.
-
-
-Canonical tp_eqMixin := EqMixin eq_tpP.
-Canonical tp_eqType := Eval hnf in EqType tp tp_eqMixin.
