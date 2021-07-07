@@ -1,0 +1,81 @@
+%% Old version:
+%\[
+%\begin{tikzcd}
+%\phantom{P} \arrow[dddd, start anchor=center, end anchor=real center, no head, xshift=4mm, decorate, decoration={brace,mirror}, "\text{\normalsize{Metatheory in Coq}}" left=10pt]
+%& \G\arrow[rr, "\Re"]\arrow[dd, "{\pmb \upharpoonright}"]& &\coG\arrow[dd, "{\pmb \upharpoonright}^{\sf c}" black]\arrow[rr, "\text{LTS}"] & & \text{global trace}\arrow[dd, leftrightarrow, "="]\\
+%& & & & &\\
+%\phantom{P} & \lT\arrow[rr, "\Re_L"]\arrow[dd, "{\pmb \vdash}"]\arrow[dddd, dash, dashed, "\text{Well Typed!}", bend left=70, red]& &\colT\arrow[rr, "\text{LTS}"]& &
+%\text{local trace}\\
+%& & & & &\\
+%\phantom{P} \arrow[dddd, start anchor=center, end anchor=center, no head, xshift=4mm, decorate, decoration={brace,mirror}, "\text{\normalsize{... to the real world!}}" left=10pt]
+%& \proc\arrow[rrrr, "\text{LTS}"']\arrow[dd, "\text{DSL layer}"]& & & &\text{process trace}\arrow[uu, "\text{erase}"']\arrow[ddllll, dash, dashed, "\text{Formalised Semantics!}", red]\\
+%& & & & &\\
+%\phantom{P}& \textbf{\dslName}\arrow[dd, "\text{code extraction}"]& & & &\\
+%& & & & &\\
+%\phantom{P}& \text{ML code}& & & &
+%\end{tikzcd}
+%\]
+
+%% Too large version:
+%\[
+%\begin{tikzcd}
+%\phantom{P} \arrow[dddd, start anchor=center, end anchor=real center, no head, xshift=7mm, decorate, decoration={brace,mirror}, "\text{\small{Metatheory in Coq}}" left=10pt]
+%& \G\arrow[rr, "\Re"]\arrow[dd, "{\pmb \upharpoonright}"]& &\coG\arrow[dd, "{\pmb \upharpoonright}^{\sf c}" black]\arrow[rr, "\text{LTS}"] & & \text{\small global trace}\arrow[dd, leftrightarrow, "="]\\
+%& & \text{\small \textcolor{orange}{(M.1)}}& & \text{\small \textcolor{orange}{(M.2)}}&\\
+%\phantom{P} & \lT\arrow[rr, "\Re"]\arrow[dd, "{\pmb \ofLt}"]\arrow[ddddr, dash, dashed, "\text{Well Typed!}", bend left=30, red]& &\colT\arrow[rr, "\text{LTS}"]& &
+%\text{\small local trace}\\
+%& & & \text{\small \textcolor{orange}{(M.3)}} & &\\
+%\phantom{P} \arrow[dd, start anchor=center, end anchor=center, no head, xshift=7mm, decorate, decoration={brace,mirror}, "\text{\small{... to the real world!}}" left=10pt]
+%& \proc\arrow[rrrr, "\text{LTS}"']\arrow[ddr, leftrightarrow, "\text{DSL layer}"]\arrow[dd, "\text{extraction}"']& & & &\text{\small process trace}\arrow[uu, "\text{erase}"']\arrow[ddlll, dash, dashed, "\text{Formalised Semantics!}", red]\\
+%& & & & &\\
+%\phantom{P}& \text{OCaml code}\arrow[r, dash, dashed, "\text{Extractable!}"', bend right=40, red] &\textbf{\dslName}&&&
+%\end{tikzcd}
+%\]
+
+
+
+% Current version!
+\pgfdeclarelayer{background}
+\pgfsetlayers{background,main}
+
+\begin{tikzpicture}[commutative diagrams/every diagram]
+
+
+   \begin{pgfonlayer}{background}
+   \fill[rounded corners, yellow!20!white] (-0.5,0.5) rectangle (7,-3.5);
+   \end{pgfonlayer}
+
+	\node(G0)at (0,0) {$\G$};
+	\node(G1)at (3,0) {$\coG$};
+	\node(G2)at (6,0) {\small{global trace}};
+	\node(L0)at (0,-1.5) {$\lT$};
+	\node(L1)at (3,-1.5) {$\colT$};
+	\node(L2)at (6,-1.5) {\small{local trace}};
+	\node(M1)at (1.5,-0.75) {\small{\textcolor{orange}{(M.1)}}};
+	\node(M2)at (4.5,-0.75) {\small{\textcolor{orange}{(M.2)}}};
+	\node(P0)at (0,-3) {$\proc$};
+	\node(P2)at (6,-3) {\small{process trace}};
+	\node(M3)at (3.3,-2.25) {\small{\textcolor{orange}{(M.3)}}};
+	\node(OC)at (0,-4.5) {\small{OCaml code}};
+	\node(ZZ)at (3.5,-4.5) {\bf \dslName};
+
+	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(G0) edge node[above] {$\Re$} (G1)
+	(G1) edge node[above] {LTS} (G2)
+	(L0) edge node[above] {$\Re$} (L1)
+	(L1) edge node[above] {LTS} (L2)
+	(G0) edge node[right] {$\upharpoonright$} (L0)
+	(G1) edge node[right] {$\upharpoonright^\textsf{c}$} (L1)
+	(G2) edge[<->] node[right] {$=$} (L2)
+	(L0) edge node[right] {$\ofLt$} (P0)
+	(P0) edge node[above, xshift=-.5cm] {LTS} (P2)
+	(P2) edge node[right] {erase} (L2)
+	(P0) edge node[left] {extraction} (OC)
+	(P0) edge[<->] node[right,xshift=.1cm] {DSL layer} (ZZ)
+	;
+	\path[dashed, red, commutative diagrams/.cd, font=\scriptsize]
+	(L0) edge[bend left=40] node[below left,yshift=.2cm] {Well typed!} (ZZ)
+	(P2) edge[] node[below right] {Certified semantics!} (ZZ)
+	(OC) edge[] node[above] {Extractable!} (ZZ)
+	;
+\end{tikzpicture}

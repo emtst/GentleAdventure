@@ -1,0 +1,16 @@
+\frametitle{Certifying the Semantics of Communication}
+
+\[
+\begin{tikzcd}
+\G\arrow[rr, "\rho"]\arrow[dd, "{\pmb \upharpoonright}"]& &\coG\arrow[rr, "\text{LTS}"]\arrow[dd, "{\pmb \upharpoonright}^{\sf c}" black] & & \text{Traces}\arrow[dd, leftrightarrow, "="]\\
+& &\\
+\lT\arrow[rr, "\rho_L"]& &\colT\arrow[rr, "\text{LTS}"]& &\text{Traces}
+\end{tikzcd}
+\]
+
+\begin{itemize}
+\item Multiparty Session Types \checkmark
+\item Coinductive Trees (equi-recursive point of view) \checkmark
+\item Semantics by Traces \checkmark (almost)
+\end{itemize}
+
