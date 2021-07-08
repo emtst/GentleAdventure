@@ -170,6 +170,42 @@
 %
 
 
+
+
+
+\begin{frame}{The Multiparty Session Types World, as We Know It}
+
+
+\begin{figure}
+\begin{tikzpicture}
+    [x=1.1cm, y=-1.5cm, align=center, font=\normalsize, draw,
+    every node/.style={minimum width=1.8cm}]+
+		\node [] (G) at (0,0) {$\G$};
+		\node [] (L1) at (-1.5,.8 ) {$\dlt{\lT_1}$};
+		\node [] (L2) at (-.50,.8 ) {$\dlt{\lT_2}$};
+		\node [] (LL) at (.50 ,.8 ) {$\dlt{\dots}$};
+		\node [] (Ln) at ( 1.5,.8 ) {$\dlt{\lT_n}$};
+		\node [] (P1) at (-1.5,1.6) {$\dproc{\proc_1}$};
+		\node [] (P2) at (-.50,1.6) {$\dproc{\proc_2}$};
+		\node [] (PP) at ( .50,1.6) {$\dots$};
+		\node [] (Pn) at ( 1.5,1.6) {$\dproc{\proc_n}$};
+		\draw [->] (G.south) to (L1);
+		\draw [->] (G.south) to (L2);
+		\draw [->, dashed] (G.south) to (LL);
+		\draw [->] (G.south) to (Ln);
+		\draw [->] (L1) to (P1);
+		\draw [->] (L2) to (P2);
+		\draw [->, dashed] (LL) to (PP);
+		\draw [->] (Ln) to (Pn);
+	    \node  at (-2,0.4) {\small projection ($\upharpoonright$)};
+	    \node  at (-2.4,1.2) {\small  typing ($\ofLt$)};
+	\end{tikzpicture}
+\end{figure}
+
+
+\end{frame}
+
+
 \begin{frame}{Zooid}
 
   \begin{figure}
@@ -180,15 +216,13 @@
 
 
 
-\begin{frame}{Multiparty Session Types for Zooid}
+
+
+\begin{frame}{Metatheory of Zooid Multiparty Session Types}
 
 \begin{figure}
 \begin{tikzpicture}[commutative diagrams/every diagram]
 
-
-   %\begin{pgfonlayer}{background}
-   %\fill[rounded corners, yellow!20!white] (-0.5,0.5) rectangle (7,-3.5);
-   %\end{pgfonlayer}
 
 	\node(G0)at (0,0) {$\G$};
 	\node(G1)at (3,0) {$\coG$};
@@ -196,13 +230,7 @@
 	\node(L0)at (0,-1.5) {$\lT$};
 	\node(L1)at (3,-1.5) {$\colT$};
 	\node(L2)at (6,-1.5) {\small{local trace}};
-	%\node(M1)at (1.5,-0.75) {\small{\textcolor{orange}{(M.1)}}};
-	%\node(M2)at (4.5,-0.75) {\small{\textcolor{orange}{(M.2)}}};
-	%\node(P0)at (0,-3) {$\proc$};
-	%\node(P2)at (6,-3) {\small{process trace}};
-	%\node(M3)at (3.3,-2.25) {\small{\textcolor{orange}{(M.3)}}};
-	%\node(OC)at (0,-5.0) {\small{OCaml code}};
-	%\node(ZZ)at (3.5,-5.0) {\bf \dslName};
+
 
 	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
 	(G0) edge node[above] {$\Re$} (G1)
@@ -212,94 +240,256 @@
 	(G0) edge node[right] {$\upharpoonright$} (L0)
 	(G1) edge node[right] {$\upharpoonright^{\textsf{c}}$} (L1)
 	(G2) edge[<->] node[right] {$=$} (L2)
-	%(L0) edge node[right] {$\ofLt$} (P0)
-	%(P0) edge node[above, xshift=-.5cm] {LTS} (P2)
-	%(P2) edge node[right] {erase} (L2)
-	%(P0) edge node[left] {extraction} (OC)
-	%(P0) edge[<->] node[right,xshift=.1cm] {DSL layer} (ZZ)
+
 	;
 
-        %\path[dashed, red, commutative diagrams/.cd, font=\scriptsize]
-	%(L0) edge[bend left=40] node[below left,yshift=.3cm] {Well typed!} (ZZ)
-	%(P2) edge[] node[below right] {Certified semantics!} (ZZ)
-	%(OC) edge[] node[above] {Extractable!} (ZZ)
-	%;
+
 
 \end{tikzpicture}
 \end{figure}
 
 \end{frame}
 
-\begin{frame}{Projection}
-
-\end{frame}
 
 
 \begin{frame}{Global and Local Types}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
-  global types syntax
+
+  \[
+  \begin{array}{ll}
+    %\tS & ::= \tnat \SEP \tint \SEP\tbool \SEP \tplus \tS \tS \SEP \tpair \tS \tS \\
+    \G & ::= \gend \;\\
+    &\SEP\; \gX \;\\
+    &\SEP\;\grec \gX \G \;\\%
+    &\SEP\;\msg \p\q {\dgt{(\tS).}} {\G}\\[4mm]%
+    \lT & := \lend\;\\
+    &\SEP\;\lX \;\\
+    &\SEP\;\lrec \lX \lT\;\\
+    &\SEP\;  \lsnd \q {\dlt{(\tS).}} {\lT}\;\\
+    &\SEP\; \lrcv \p  {\dlt{(\tS).}} {\lT}
+  \end{array}
+\]
 
 
-  local types syntax
 \end{column}
 \begin{column}{0.5\textwidth}  %%<--- here
-  global types example
-
-  local type example
+  \[
+  \G = \grec \gX {\msg \p\q {(\tS).} \gX}
+  \]
+  \vspace{8mm}
+  \[
+  \begin{array}{l}
+    \proj \G p = \lrec \lX {\lsnd q {(\tS).} \lX}\\
+    \proj \G q = \lrec \lX {\lrcv p {(\tS).} \lX}
+  \end{array}
+  \]
 \end{column}
 \end{columns}
 \end{frame}
 
 
-\begin{frame}{Coinductive Global and Local Types}
+\begin{frame}{Coinductive Global and Local ``Trees''}
   \begin{columns}
-\begin{column}{0.5\textwidth}
-  coglobal types syntax
+\begin{column}{0.4\textwidth}
+  \[
+  \coG ::=\; %
+  \cogend \;\SEP\;%
+  \comsgn \p\q  {\dcog{(\tS).}} {\coG}
+  \]
+  \vspace{-4mm}
+  \[
+    \begin{array}{ll}
+    \preG  ::= & \pgend\ \coG \;\\
+    &\SEP\;\pmsgn \p\q {\dpre{(\tS)}} {\preG}\\
+    &\SEP\; \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
+    \end{array}
+  \]
+\vspace{4mm}
 
-
-  colocal types syntax
+    \[
+    \begin{array}{ll}
+      \colT ::= & \colend\;\\
+      &\SEP\;\colsnd \p {\dcol{(\tS).}} {\colT}\\
+      &\SEP\;\colrcv \q {\dcol{(\tS).}} {\colT}
+    \end{array}
+  \]
 \end{column}
-\begin{column}{0.5\textwidth}  %%<--- here
-  coglobal types example
+\begin{column}{0.6\textwidth}  %%<--- here
+  Inductive prefixes for global ``trees'' $\preG$ are formally introduced for asynchronicity!
 
-  colocal type example
+    \[
+  \pmsgn \p\q {\dpre{(\tS)}} {\preG} \step \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
+  \]
 \end{column}
 \end{columns}
 \end{frame}
 
-\begin{frame}{Towards Semantics with Coinductive Projection}
+
+\begin{frame}{Coinductive Global and Local ``Trees''}
   \begin{columns}
 \begin{column}{0.5\textwidth}
-  projection commutes (figure)
+  \[
+  \begin{array}{ll}
+    \coG ::=\;&\cogend \;\\
+    &\SEP\;\comsgn \p\q  {\dcog{(\tS).}} {\coG}\;\\
+    &\SEP\;\comsgs \p\q {\ } {\dcog{(\tS).}} {\coG}
+  \end{array}
+  \]
+
+\vspace{4mm}
+
+    \[
+    \begin{array}{ll}
+      \colT ::= & \colend\;\\
+      &\SEP\;\colsnd \p {\dcol{(\tS).}} {\colT}\\
+      &\SEP\;\colrcv \q {\dcol{(\tS).}} {\colT}
+    \end{array}
+  \]
 \end{column}
 \begin{column}{0.5\textwidth}  %%<--- here
-  Let's go to Coq!
+  \[
+  \coG = \comsgn \p \q {\dcog{(\tS).}} {\coG}
+  \]
+  \[
+  \begin{array}{l}
+    \dcol{\colT_\p} =  \colsnd \q {(\tS).} \dcol{\colT_\p}\\
+    \dcol{\colT_\q} = \colrcv \p {(\tS).} \dcol{\colT_\q}\\
+    \text{with } \coproj \p \coG \dcol{\colT_\p}\\
+    \text{and }  \coproj \q \coG \dcol{\colT_\q}
+  \end{array}
+  \]
+
 \end{column}
-  \end{columns}
+\end{columns}
 \end{frame}
 
-\begin{frame}{Semantics}
-  semantics diagram
+\begin{frame}{Abandoning Inductive Datatypes}
+ \begin{small}
+  \begin{theorem}[Unravelling preserves projections]
+    Given $\G$, $\lT$, $\coG$ and $\colT$, such that $(a)$ $\projt{\G} \pr = \lT\ $, $(b)$ $\gunroll \G \coG$, and $(c)$ $\lunroll \lT \colT$,
+then $\coproj \pr \coG \colT$.
+  \end{theorem}
+\end{small}
+
+  \begin{figure}
+\begin{tikzpicture}[commutative diagrams/every diagram]
+
+
+	\node(G0)at (0,0) {$\G$};
+	\node(G1)at (3,0) {$\coG$};
+	%\node(G2)at (6,0) {\small{global trace}};
+	\node(L0)at (0,-1.5) {$\lT$};
+	\node(L1)at (3,-1.5) {$\colT$};
+	%\node(L2)at (6,-1.5) {\small{local trace}};
+
+
+	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(G0) edge node[above] {$\Re$} (G1)
+	%(G1) edge node[above] {LTS} (G2)
+	(L0) edge node[above] {$\Re$} (L1)
+	%(L1) edge node[above] {LTS} (L2)
+	(G0) edge node[right] {$\upharpoonright$} (L0)
+	(G1) edge node[right] {$\upharpoonright^{\textsf{c}}$} (L1)
+	%(G2) edge[<->] node[right] {$=$} (L2)
+
+	;
+
+\end{tikzpicture}
+  \end{figure}
+
+        \begin{proof}
+          By coinduction. :)
+        \end{proof}
+
+\end{frame}
+
+\begin{frame}{Type Semantics for Zooid}
+
+\begin{figure}
+\begin{tikzpicture}[commutative diagrams/every diagram]
+
+
+	%\node(G0)at (0,0) {$\G$};
+	\node(G1)at (3,0) {$\coG$};
+	\node(G2)at (6,0) {\small{global trace}};
+	%\node(L0)at (0,-1.5) {$\lT$};
+	\node(L1)at (3,-1.5) {$\colT$};
+	\node(L2)at (6,-1.5) {\small{local trace}};
+
+
+	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	%(G0) edge node[above] {$\Re$} (G1)
+	(G1) edge node[above] {LTS} (G2)
+	%(L0) edge node[above] {$\Re$} (L1)
+	(L1) edge node[above] {LTS} (L2)
+	%(G0) edge node[right] {$\upharpoonright$} (L0)
+	(G1) edge node[right] {$\upharpoonright^{\textsf{c}}$} (L1)
+	(G2) edge[<->] node[right] {$=$} (L2)
+
+	;
+
+
+
+\end{tikzpicture}
+\end{figure}
 
 \end{frame}
 
 
-\begin{frame}{With Love, from $\p$ to $\q$}
-picture of basic send-receive
+\begin{frame}[fragile]{With Love, from $\p$ to $\q$}
+
+\begin{footnotesize}
+
+$\p$ sends:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
+\& \&
+\coG\arrow[dd, "\upharpoonright_{\p}"] \\
+\& \& \& \&\\
+\colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
+\end{tikzcd}
+\]
+\ \\
+\ \\
+\ \\
+%\visible<2->{
+$\q$ receives:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[lldd, "\upharpoonright_{\q}"]
+\& \&
+\coG\arrow[dd, "\upharpoonright_{\q}"] \\
+\& \& \& \&\\
+\colrcv \p \dcol{ (S).} \colT\dcol{'} \arrow[rrrr, "!\q\p\tS"]\& \& \& \&\colT\dcol{'}
+\end{tikzcd}
+\]
+%}
+\end{footnotesize}
+
+
 \end{frame}
 
-\begin{frame}{Tools for our LTS}
-  labels and basic G step
+\begin{frame}[fragile]{Tools for our LTS}
+\begin{small}
+  {\bf Actions.} $!\p\q\tS$ and $?\q\p\tS$\\ \ \\
+  {\bf (Local) Environments.} $E$ such that, $E(\p)=\dcol{\colT_\p}$ where $\coproj \p \coG \dcol{\colT_\p}$\\ \ \\
+  {\bf Queues and Queue Environments.} $Q$, buffers for asynchronous communication.
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\colsnd \q \dcol{(S).} \colT \arrow[rr, "\text{step}"]\& \&\colT\&\&\\
+Q(\p,\q)=\epsilon\arrow[rr,"\text{enqueue}"] \& \& Q(\p,\q)=[S]\arrow[rr,"\text{dequeue}"] \& \& Q(\p,\q)=\epsilon\\
+\& \& \colrcv \p  \dcol{(S).} \colT{\color{dkolive}'}  \arrow[rr, "\text{step}"]\& \& \colT{\color{dkolive}'}
+\end{tikzcd}
+\]
 
-  environments
-
-  queues/buffers (async)
-
-  local transitions
-
-  traces
+\end{small}
 \end{frame}
 
 
