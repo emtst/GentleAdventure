@@ -11,6 +11,23 @@
 Makefile
 Makefile.conf
 
-# Omit files in a generated directory
+# Omit files in a generated directories
 
 **/generated/*
+**/_minted-slides/*
+**/auto/*
+
+# latex files
+
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+
+# generated files
+
+*.pdf
