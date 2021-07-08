@@ -1,0 +1,312 @@
+\section{Introduction}
+
+\endinput
+\begin{frame}
+  \vfill
+  \centering
+  %\begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{block}
+  \begin{sticky}
+    \usebeamerfont{title}{\underline{Part I:}} \\
+    {\normalfont\Large Introduction to Concurrent Programming in Java --
+    Deadlocks} \par%
+  \end{sticky}
+  %\end{beamercolorbox}
+  \vfill
+\end{frame}
+
+\begin{frame}
+  \frametitle{About Today's Lecture}
+
+  \begin{block}{So far in this course:}
+      \begin{itemize}
+        \item[{\color{DarkGreen}$\checkmark$}] Java Thread creation
+        \item[{\color{DarkGreen}$\checkmark$}] Synchronisation: Java \mintinline{java}{synchronized}, monitors
+      \end{itemize}
+  \end{block}
+
+  \begin{block}{Today}
+      \begin{itemize}
+        \item[{\color{DarkBlue}$\blacksquare$}] Deadlocks
+        \item[{\color{DarkBlue}$\blacksquare$}] The Dining Philosophers Problem
+      \end{itemize}
+  \end{block}
+
+  \begin{block}{\color{DarkGreen}Intended Learning Outcomes}
+      \begin{itemize}
+        \item[{\color{DarkGreen}$\blacksquare$}] The concept of \textbf{deadlock}
+        \item[{\color{DarkGreen}$\blacksquare$}] Four necessary and sufficient conditions for deadlocks
+        \item[{\color{DarkGreen}$\blacksquare$}] Identifying deadlocks in practice: blocked threads
+      \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Deadlock}
+  \begin{tcolorbox}[colback=white,colframe=DarkGreen]
+    \begin{tabularx}{\linewidth}{l l}
+      \textbf{Concept:} & \alert{deadlock}: no further progress possible
+      \\
+      & there are four necessary \& sufficient conditions
+      \\
+      \textbf{In Practice:} & blocked threads
+    \end{tabularx}
+  \end{tcolorbox}
+
+  \begin{minipage}{.4\textwidth}
+    \hspace{10cm}
+  \end{minipage}
+  \begin{minipage}{.54\textwidth}
+  \begin{alertblock}{Aim}
+    \textbf{Deadlock-avoidance}: design and implement systems where deadlock cannot
+    occur.
+  \end{alertblock}
+  \end{minipage}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Four necessary \& sufficient conditions for deadlocks}
+  \begin{tcolorbox}[colback=white,colframe=DarkGreen]
+    \begin{enumerate}
+      \item \alert<2>{Serially reusable resources}
+        \uncover<2->{
+          \begin{itemize}
+            \item[] the processes involved share resources which they use under mutual exclusion
+          \end{itemize}
+        }
+      \item \alert<3>{Incremental acquisition}
+        \uncover<3->{
+          \begin{itemize}
+            \item[] processes hold on to resources already allocated to them
+              while waiting to acquire additional resources
+          \end{itemize}
+        }
+        \item \alert<4>{No preemption}
+        \uncover<4->{
+          \begin{itemize}
+            \item[] once acquired by a process, resources cannot be pre-empted
+              (forcibly withdrawn) but are only released voluntarily
+          \end{itemize}
+        }
+        \item \alert<5>{Wait-for cycle}
+        \uncover<5->{
+          \begin{itemize}
+            \item[] a circular chain (or cycle) of processes exists such that
+              each process holds a resource which its successor in the cycle is
+              waiting to acquire
+          \end{itemize}
+        }
+    \end{enumerate}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Wait-for cycle}
+
+  \begin{tikzpicture}
+    \node[draw, ultra thick, circle, minimum width=1cm] at (180:2cm) (A) { A };
+
+    \node[draw, ultra thick, circle, minimum width=1cm] at (60:2cm) (B) { B };
+
+    \node[draw, ultra thick, circle, minimum width=1cm] at (300:2cm) (C) { C };
+
+    \node[draw, ultra thick, circle, minimum width=1cm, right=2cm of B] (Z) { Z };
+
+    \node[left=.7cm of A] {\color{red}holds A, awaits B};
+    \node[above=.4cm of B] {\color{red}holds B, awaits C};
+    \node[below=.4cm of C] {\color{red}holds C, awaits A};
+    \node[below=.4cm of Z] {\color{red}holds Z, awaits B};
+    \draw[bend left=45, thick, ->,tips=proper] (A) to (B);
+    \draw[bend left=45, thick, ->,tips=proper] (B) to (C);
+    \draw[bend left=45, thick, ->,tips=proper] (C) to (A);
+    \draw[thick, ->, tips=proper] (Z) -- (B);
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Dining Philosophers (I)}
+
+  \begin{columns}
+    \begin{column}{.6\textwidth}
+       Five philosophers sit around a circular table.
+       \begin{itemize}
+           \item Each philosopher spends
+       his life alternately \alert{thinking} and \alert{eating}.
+       % In the centre of the table is a large bowl of spaghetti.
+           \item A philosopher needs \alert{two forks} to start eating.
+
+          \item One fork is placed between each pair of philosophers and they agree that
+            each will only use the fork to his immediate right and left.
+       \end{itemize}
+    \end{column}
+
+    \begin{column}{.39\textwidth}
+      \includegraphics[width=.9\textwidth]{figures/dining_philosophers.png}
+      \hspace*{15pt}\hbox{\tiny Source:\thinspace{\itshape Benjamin D. Esham / Wikimedia Commons}}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Dining Philosophers (and II)}
+
+  \begin{columns}
+    \begin{column}{.6\textwidth}
+       \begin{itemize}
+         \item Fork is a \alert{shared resource}
+           \begin{itemize}
+             \item[] Two actions: \alert{get}, \alert{put}
+           \end{itemize}
+         \item Before eating, a philosopher must first
+           {\only<2-3>{\color{red}\bf}get} his
+           {\only<2>{\color{red}\bf}right} and then {\only<3>{\color{red}\bf}left}
+            forks.
+          \item Once finished, the philosopher {\only<4>{\color{red}\bf}puts back} both forks.
+       \end{itemize}
+    \end{column}
+
+    \begin{column}{.39\textwidth}
+      \only<1>{\includegraphics[width=.9\textwidth]{figures/dining_philosophers.png}}%
+      \only<2>{\includegraphics[width=.9\textwidth]{figures/dining_philosophers_right.png}}%
+      \only<3>{\includegraphics[width=.9\textwidth]{figures/dining_philosophers_both.png}}%
+      \only<4>{\includegraphics[width=.9\textwidth]{figures/dining_philosophers_stop.png}}
+      \hspace*{15pt}\hbox{\tiny Source:\thinspace{\itshape Benjamin D. Esham / Wikimedia Commons}}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[t, fragile]
+  \frametitle{Dining Philosophers in Java -- Forks}
+
+  Forks are passive entities -- implemented as monitors.
+  \vspace{.3cm}
+
+  \begin{tcolorbox}[colback=white,colframe=DarkGreen]
+  \begin{minted}[fontsize=\tiny]{java}
+class Fork {
+  private boolean taken=false;
+  private int identity;
+
+  public Fork(int id) { identity = id; }
+
+  public synchronized void put() {
+    taken=false;
+    System.out.println("Fork " + identity + " is free");
+    notify();
+  }
+
+  public synchronized void get() throws java.lang.InterruptedException {
+    while (taken) wait();
+    taken=true;
+    System.out.println("Fork " + identity + " is taken");
+  }
+}
+  \end{minted}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}[t,fragile]
+  \frametitle{Dining Philosophers in Java -- Philosophers}
+
+  Philosophers are active entities -- implemented as threads.
+  \vspace{.3cm}
+
+  \begin{tcolorbox}[colback=white,colframe=DarkGreen]
+  \begin{minted}[fontsize=\tiny]{java}
+class Philosopher extends Thread {
+  ...
+  public void run() {
+    try {
+      while (true) {
+        System.out.println("Philosopher " + identity + " is thinking...");
+        sleep(thinkTime());
+        System.out.println("Philosopher " + identity + " is hungry!");
+        right.get();
+        System.out.println("Philosopher " + identity + " got right fork.");
+        sleep(500);
+        left.get();
+        System.out.println("Philosopher " + identity + " got left fork.");
+        System.out.println("Philosopher " + identity + " is eating.");
+        sleep(eatTime());
+        right.put();
+        left.put();
+      }
+    } catch (java.lang.InterruptedException e) {}
+  }
+}
+  \end{minted}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Dining Philosophers in Java}
+  \centering
+  \begin{tcolorbox}[colback=white,colframe=DarkGreen]
+    \centering
+    \vspace{1cm}
+    \Huge DEMO!
+    \vspace{1cm}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}
+  \frametitle{How Can the Philosophers Deadlock?}
+
+  \begin{columns}
+    \begin{column}{.6\textwidth}
+      \uncover<2->{
+      Steps:
+      \begin{enumerate}
+          \item Plato gets right fork.
+          \item Konfunzius gets right fork.
+          \item Socrates gets right fork.
+          \item Voltaire gets right fork.
+          \item Descartes gets right fork.
+      \end{enumerate}}\uncover<3->{
+  \begin{tcolorbox}[colback=white,colframe=DarkRed]
+    They are all in a wait-cycle!
+  \end{tcolorbox}
+      }
+    \end{column}
+    \begin{column}{.39\textwidth}
+      \uncover<3>{\includegraphics[width=.9\textwidth]{figures/dining_philosophers_deadlock.png}
+      \hspace*{15pt}\hbox{\tiny Source:\thinspace{\itshape Benjamin D. Esham / Wikimedia Commons}}
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Deadlock-Free Philosophers}
+  \begin{itemize}
+    \item[] Deadlock can be avoided by ensuring that a wait-for cycle cannot
+      exist. \alert{How?}
+      \vspace{1cm}
+    \item[] Introduce some asymetry in the way the philosophers lock the forks.
+    \item[] Number each fork from 1 to 5. Always lock first the
+      fork with \emph{lower} identifier.
+      \vspace{1cm}
+    \item[] Exercise: \alert{can you think of other strategies?}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Summary}
+
+  We have seen:
+      \begin{itemize}
+        \item[{\color{DarkGreen}$\checkmark$}] The concept of deadlock
+        \item[{\color{DarkGreen}$\checkmark$}] The Dining Philosophers Problem
+        \item[{\color{DarkGreen}$\checkmark$}] Four necessary and sufficient conditions for deadlocks
+        \item[{\color{DarkGreen}$\checkmark$}] Deadlocks in Java
+      \end{itemize}
+
+      \vspace{.7cm}
+  \begin{tcolorbox}[colback=white,colframe=DarkRed]
+    \begin{itemize}
+      \item \alert{Aim:} avoding deadlocks!
+      \item Avoiding deadlocks is hard, and an active field of research.
+    \end{itemize}
+  \end{tcolorbox}
+\end{frame}
