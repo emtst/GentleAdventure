@@ -30,68 +30,51 @@ Canonical CH_var_eqType := EqType _ CH.var_eqMixin.
 
 (* expressions and processes *)
 
+(* expressions *)
+
 Inductive exp : Set :=
   | tt
   | ff
+  | one
   | V of evar
 .
 
-(* CoInductive just because we don't need an induction principle *)
-CoInductive polarity := Pos | Neg. (* TODO really replace this by bool *)
-Definition dual_pol p := if p is Pos then Neg else Pos.
+Coercion V : evar >-> exp.
 
-Definition eq_polarity (p p' : polarity) : bool :=
-  match p, p' with
-  | Pos, Pos
-  | Neg, Neg => true
-  | _, _ => false
+(* A simple extension would be to add simple computation to
+expressions. This would require adding reductions to expressions. And
+proving these reductions are type preserving etc.
+
+For example, implementing 'not' that takes a boolean and returns its
+negation would be a simple computation rule.
+*)
+
+Inductive lc_exp : exp -> Prop :=
+  | lc_tt : lc_exp tt
+  | lc_ff : lc_exp ff
+  | lc_one : lc_exp one
+  | lc_var a: lc_exp (V(EV.Free a))
+.
+Hint Constructors lc_exp.
+
+Definition fv_exp (e : exp) : seq EV.atom :=
+  match e with
+    | V (EV.Free a) => [::a]
+    | _ => [::]
   end.
 
-Lemma polarity_reflect : Equality.axiom eq_polarity.
-Proof.
-    by do !case ; constructor.
-Qed.
-
-Definition polarity_eqMixin := EqMixin polarity_reflect.
-Canonical polarity_eqType := EqType _ polarity_eqMixin.
-
-(* polarities have a simple order (e.g. + < -) *)
-
-Definition ltn_pol (p p' : polarity) : bool :=
-  match p, p' with
-  | Pos, Neg => true
-  | _, _ => false
+(* Open a bound variable in an expression (original ope) *)
+Definition open_exp (n : nat) (e' : exp) (e : exp) : exp :=
+  match e with
+  | V v => EV.open_var V n e' v
+  | _ => e
   end.
 
-Lemma ltn_pol_irreflexive : irreflexive ltn_pol. (* x : ltn_pol x x = false. *)
-Proof.
-    by case.
-Qed.
-
-Lemma ltn_pol_transitive : transitive ltn_pol.
-Proof.
-  by do !case.
-Qed.
-
-Lemma ltn_pol_total (a b : polarity) : [|| ltn_pol a b, a == b | ltn_pol b a].
-Proof.
-  move: a b.
-  case ; case => //.
-Qed.
-
-Definition polarity_ordMixin : Ordered.mixin_of polarity_eqType :=
-  OrdMixin
-    ltn_pol_irreflexive
-    ltn_pol_transitive
-    ltn_pol_total.
-Canonical Structure polarity_ordType := OrdType _ polarity_ordMixin.
-
-Definition channel := (CH.var * polarity)%type.
-Definition ch x p : channel := (x, p).
+(* processes *)
 
 Inductive proc : Set :=
-| send : channel -> exp -> proc -> proc
-| receive : channel -> proc -> proc
+| send : CH.var -> exp -> proc -> proc
+| receive : CH.var -> proc -> proc
 | ife : exp -> proc -> proc -> proc
 | par : proc -> proc -> proc
 | inact : proc
@@ -102,28 +85,37 @@ Hint Constructors proc.
 
 (**** locally nameless definitions ****)
 
-(* for expressions *)
+(* free variables in things *)
 
-Inductive lc_exp : exp -> Prop :=
-  | lc_tt : lc_exp tt
-  | lc_ff : lc_exp ff
-  | lc_vare a: lc_exp (V(EV.Free a))
-.
-Hint Constructors lc_exp.
+(* original name fv_e *)
+(* may not be really needed *)
+Fixpoint fev_proc (P : proc) : seq EV.atom :=
+  match P with
+  | nu P
+  | bang P
+  | receive _ P => fev_proc P
+  | send _ e P => fv_exp e ++ fev_proc P
+  | ife e P Q => fv_exp e ++ fev_proc P ++ fev_proc Q
+  | par P Q => fev_proc P ++ fev_proc Q
+  | inact => [::]
+  end.
 
-
-(* Open a bound variable in an expression *)
-Definition ope (n : nat) (e' : exp) (e : exp) : exp :=
-  match e with
-  | V v => EV.open_var V n e' v
-  | _ => e
+Fixpoint fv (P : proc) : seq CH.atom :=
+  match P with
+  | send k e P => CH.fv k ++ fv P
+  | receive k P => CH.fv k ++ fv P
+  | ife e P Q => fv P ++ fv Q
+  | par P Q => fv P ++ fv Q
+  | inact => [::]
+  | nu P => fv P
+  | bang P => fv P
   end.
 
 Fixpoint open_e (n : nat) (u : exp) (P : proc) : proc :=
   match P with
-  | send k e P => send k (ope n u e) (open_e n u P)
+  | send k e P => send k (open_exp n u e) (open_e n u P)
   | receive k P => receive k (open_e (S n) u P)
-  | ife e P Q => ife (ope n u e) (open_e n u P) (open_e n u Q)
+  | ife e P Q => ife (open_exp n u e) (open_e n u P) (open_e n u Q)
   | par P Q => par (open_e n u P) (open_e n u Q)
   | inact => inact
   | nu P => nu (open_e n u P)
@@ -133,18 +125,12 @@ Notation "{ope k ~> u } t" := (open_e k u t) (at level 67) : sr_scope.
 
 Open Scope sr_scope.
 Definition open_e0 P u :={ope 0~>u} P.
+(* this effectively substitutes variable index 0 with u *)
 
 (* for processes *)
 
-Inductive lc_ch : channel -> Prop :=
-| lc_channel a pol: lc_ch (CH.Free a, pol).
-Hint Constructors lc_ch.
-
-
-Definition opk (n : nat) (u : CH.var) (ch : channel) : channel :=
-  match ch with
-  | (k, p) => (CH.open_var id n u k, p)
-  end.
+Definition opk (n : nat) (u : CH.var) (k : CH.var) : CH.var :=
+  CH.open_var id n u k.
 
 Fixpoint open_k (n : nat) (ko : CH.var) (P : proc) : proc :=
   match P with
@@ -162,13 +148,13 @@ Definition open_k0 P u :={opk 0~>u} P.
 
 Inductive lc : proc -> Prop :=
 | lc_send : forall k e P,
-    lc_ch k ->
+    CH.lc k ->
     lc_exp e ->
     lc P ->
     lc (send k e P)
 
 | lc_receive : forall (L : seq EV.atom) k P,
-    lc_ch k ->
+    CH.lc k ->
     (forall x, x \notin L -> lc (open_e0 P (V (EV.Free x)))) ->
     lc (receive k P)
 
@@ -190,6 +176,8 @@ Inductive lc : proc -> Prop :=
 .
 Hint Constructors lc.
 
+(* TODO what about lines 803-1346 SyntaxR.v *)
+
 (**** important definitions ****)
 
 (* structural congruence *)
@@ -209,9 +197,9 @@ where "P === Q" := (congruent P Q).
 
 Reserved Notation "P --> Q" (at level 70).
 Inductive red : proc -> proc -> Prop :=
-| r_com (k : CH.atom) p pd e P Q:
-    lc P -> (*body Q ->*) dual_pol p == pd -> (* use open_e instead of ope *)
-    (par (send (ch k p) e P) (receive ((ch k pd)) Q)) --> (par P ({ope 0 ~> e} Q))
+| r_com (k : CH.atom) e P Q:
+    lc P -> (* body Q -> *)  (* use open_e instead of ope *)
+    (par (send k e P) (receive k Q)) --> (par P ({ope 0 ~> e} Q))
 
 | r_cong P P' Q Q' :
     lc P -> lc Q ->
@@ -220,7 +208,7 @@ Inductive red : proc -> proc -> Prop :=
     Q' === Q ->
     P --> Q
 
-| r_scop_ch P P':
+| r_scop P P':
     (forall (L : seq CH.atom) k,
         k \notin L -> (open_k0 P (CH.Free k)) --> (open_k0 P' (CH.Free k))) ->
     nu P --> nu P'
@@ -240,79 +228,42 @@ Inductive red_st : proc -> proc -> Prop :=
 | r_step P Q R: P --> Q -> Q -->* R -> P -->* R
 where "P -->* Q" := (red_st P Q).
 
-(** types **)
 
-Inductive sort : Set :=
-  | boole : sort. (* boolean expression *)
+(* substitutions when dealing with open terms (terms with names in them) *)
 
-Fixpoint eq_sort (s s' : sort) : bool :=
-  match s, s' with
-  | boole, boole => true
-  (* | _, _ => false *) (* there is only one type for now *)
+Definition subst_ch (z : CH.atom) (k' : CH.var) (k : CH.var) : CH.var :=
+  if k == CH.Free z then k' else k.
+
+Definition subst_exp (z : EV.atom) (u : exp) (e : exp) : exp :=
+  match e with
+  | V (EV.Free b) => if z == b then u else e
+  | _ => e
   end.
 
-Lemma eq_sortP : Equality.axiom eq_sort.
-Proof.
-  move=> x y.
-  apply: (iffP idP)=>[|<-].
-  by elim x ; elim y.
-  by elim x.
-Qed.
-
-Canonical sort_eqMixin := EqMixin eq_sortP.
-Canonical sort_eqType := Eval hnf in EqType sort sort_eqMixin.
-
-Inductive tp : Set :=
-  | input : sort -> tp -> tp
-  | output : sort -> tp -> tp
-  | ended : tp
-.
-
-Fixpoint dual (T : tp) : tp :=
-  match T with
-  | input s T => output s (dual T)
-  | output s T => input s (dual T)
-  | ended => ended
-  end
-.
-
-Fixpoint eq_tp (T T': tp) : bool :=
-  match T, T' with
-  | input s T, input s' T' => eq_sort s s' && eq_tp T T'
-  | output s T, output s' T' => eq_sort s s' && eq_tp T T'
-  | ended, ended => true
-  | _, _ => false
+Fixpoint subst_proc (z : CH.atom) (u : CH.var) (P : proc) : proc :=
+  match P with
+  | send k e P => send (subst_ch z u k) e (subst_proc z u P)
+  | receive k P => receive (subst_ch z u k) (subst_proc z u P)
+  | ife e P Q => ife e (subst_proc z u P) (subst_proc z u Q)
+  | par P Q => par (subst_proc z u P) (subst_proc z u Q)
+  | inact => inact
+  | nu P => nu (subst_proc z u P)
+  | bang P => bang (subst_proc z u P)
   end.
 
+Fixpoint subst_proc_exp (z : EV.atom) (e : exp) (P : proc) : proc :=
+  match P with
+  | send k e' P => send k (subst_exp z e e') (subst_proc_exp z e P)
+  | receive k P => receive k (subst_proc_exp z e P)
+  | ife e' P Q => ife (subst_exp z e e') (subst_proc_exp z e P) (subst_proc_exp z e Q)
+  | par P Q => par (subst_proc_exp z e P) (subst_proc_exp z e Q)
+  | inact => inact
+  | nu P => nu (subst_proc_exp z e P)
+  | bang P => bang (subst_proc_exp z e P)
+  end.
 
-
-Lemma eq_imp_eq : forall x y, eq_tp x y -> x = y.
-Proof. Admitted.
-(*   apply tp_sort_mutind ; intros; try destruct y  ; try destruct s'; try easy ; *)
-(*   inversion H1 ; apply Bool.andb_true_iff in H3 ; destruct H3 ; *)
-(*   try(move:H3 ; move/H0=>H3 ; move:H2 ; move/H=>H4 ; by rewrite H3 H4). *)
-(* Qed. (* more ssreflect can make this better *) *)
-
-Lemma eq_tp_refl x : eq_tp x x.
-Proof.
-  elim x ;
-    try
-      move=>s t H ;
-      rewrite/eq_tp=>// ;
-      fold eq_tp ;
-      rewrite H=>//= ;
-      elim s=>//.
-Qed.
-
-
-Lemma eq_tpP : Equality.axiom eq_tp.
-Proof.
-  move=>x y.
-  apply: (iffP idP)=>[|<-].
-  apply eq_imp_eq.
-  apply eq_tp_refl.
-Qed.
-
-
-Canonical tp_eqMixin := EqMixin eq_tpP.
-Canonical tp_eqType := Eval hnf in EqType tp tp_eqMixin.
+(* Notation "s[ z ~> u ]n a" := (subst_nm z u a) (at level 68) : sr_scope. *)
+Notation "s[ z ~> u ]c k" := (subst_ch z u k) (at level 68) : sr_scope.
+Notation "s[ z ~> u ]e e" := (subst_exp z u e) (at level 68) : sr_scope.
+Notation "s[ z ~> u ]p P" := (subst_proc z u P) (at level 68) : sr_scope.
+Notation "s[ z ~> e ]pe P" := (subst_proc_exp z e P) (at level 68) : sr_scope.
