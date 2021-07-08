@@ -3664,20 +3664,17 @@ Section TraceEquiv.
       by rewrite remf1_set eq_refl remf1_id// -fndSome QPRJ.
   Qed.
 
-  (*here*)
-
-  Lemma deq_act A F T P l Tyl Q' :
+  Lemma deq_act A F T P t Q' :
     subject A != T ->
-    deq P.2 (F, T) = Some (l, Tyl, Q') ->
-    deq (run_step A P).2 (F, T) = Some (l, Tyl, (run_step A (P.1, Q')).2).
+    deq P.2 (F, T) = Some (t, Q') ->
+    deq (run_step A P).2 (F, T) = Some (t, (run_step A (P.1, Q')).2).
   Proof.
-    case: A=>[a p q l' Ty']; rewrite /run_step/=.
-    case: look=>[|a0 r0 C0]//.
-    case: (C0 l')=>// [[Ty1 L1]].
-    case: ifP=>//COND; case: a COND=>//= COND pT DEQ.
-    - by apply: (deq_enq_sameC DEQ).
-    - move: DEQ; rewrite /deq/=.
-      case EQ: (P.2.[? (F, T)]) =>[[|V0 W]|]//.
+    case: A=>[a p q t']; rewrite /run_step/=.
+    case: look=>[|a0 r0 [t0 L0]]//.
+    case: ifP=>//COND; case: a COND=>//= COND pT.
+    - by move=>DEQ; apply: (deq_enq_sameC DEQ).
+    - rewrite /deq/=.
+      case EQ: (P.2.[? (F, T)])=>[[|V0 W]|]//.
       case EQ': (P.2.[? (q, p)])=>[[|V1 W']|]//.
       + rewrite EQ.
         case: ifP EQ=>[/eqP->|WEQ]; move=>PFT [<-] <-.
@@ -3701,23 +3698,21 @@ Section TraceEquiv.
         * by rewrite WEQ fnd_set xpair_eqE andbC (negPf pT)/= EQ'.
   Qed.
 
-  (* FIXME: fix statement by adding the fact that continuations != l do not change (and therefore we know
-     their projection)
-  *)
 
-  Definition R_all_except (l' : lbl) (R : ig_ty -> rl_ty -> Prop)
+
+  (*Definition R_all_except (l' : lbl) (R : ig_ty -> rl_ty -> Prop)
              (C : lbl -> option (mty * ig_ty))
              (lC : lbl -> option (mty * rl_ty)) :=
     forall l Ty G L,
-      l' != l -> C l = Some (Ty, G) -> lC l = Some (Ty, L) -> R G L.
+      l' != l -> C l = Some (Ty, G) -> lC l = Some (Ty, L) -> R G L.*)
 
-  Definition updC A (l : lbl) (Ty : mty) C (a : A) l' :=
+  (*Definition updC A (l : lbl) (Ty : mty) C (a : A) l' :=
     if l == l' then
       Some (Ty, a) (* look E p *)
     else
-      C l'.
+      C l'.*)
 
-  Lemma dom_updC A l Ty C (a : A) L' :
+  (*Lemma dom_updC A l Ty C (a : A) L' :
     C l = Some (Ty, L') ->
     same_dom C (updC l Ty C a).
   Proof.
@@ -3726,46 +3721,33 @@ Section TraceEquiv.
     + by move=>->; exists G.
     + by move: EQ=>/eqP<-; move=>[<-]; exists L'.
     + by move=>->; exists G.
-  Qed.
+  Qed.*)
 
-  Lemma Proj_recv_undo l F T C lCT Ty P G Q' :
+  Lemma Proj_recv_undo F T t LT P G Q' :
     F != T ->
-    C l = Some (Ty, G) ->
-    look P.1 T = rl_msg l_recv F lCT ->
-    same_dom C lCT ->
-    R_all_except l (IProj simple_co_merge T) C lCT ->
-    deq P.2 (F, T) = Some (l, Ty, Q') ->
-    (forall p, exists lC, same_dom C lC /\ R_all_except l (IProj simple_co_merge p) C lC)  ->
-    Projection simple_co_merge G (run_step (mk_act l_recv T F l Ty) P) ->
-    Projection simple_co_merge (ig_msg (Some l) F T C) P.
+    (*C l = Some (Ty, G) ->*)
+    look P.1 T = rl_msg a_recv F (t,LT) ->
+    (*same_dom C lCT ->*)
+    (*R_all_except l (IProj simple_co_merge T) C lCT ->*)
+    deq P.2 (F, T) = Some (t, Q') ->
+    (*(forall p, exists lC, same_dom C lC /\ R_all_except l (IProj simple_co_merge p) C lC)  ->*)
+    Projection G (run_step (mk_act a_recv T F t) P) ->
+    Projection (ig_msg true F T (t,G)) P.
   Proof.
-    move=> FT Cl ET DOM ALLT PFT PRJ0 PRJ1; split.
+    move=> FT llT dq PRJ; split.
     - move=>p; case: (boolP (p == T))=>[/eqP->|pT].
-      + move: FT; rewrite eq_sym ET=>TF.
-        apply (iprj_recv (Some l) TF)=>// l0 Ty0 G0 L0 Cl0 lCT0.
-        move: (PRJ1.1 T); rewrite /run_step/= ET.
-        move: (dom DOM Cl)=>[LT] lCTl; rewrite lCTl !eq_refl /= look_same=>PRJ.
-        case: (boolP (l == l0)) => [/eqP|]ll0.
-        * by move: ll0 Cl0 lCT0=><-; rewrite Cl lCTl =>[][<-]<-[<-] //.
-        * by apply/(ALLT _ _ _ _ ll0 Cl0).
-      + move: (PRJ0 p)=>[lCp] [DOMp] ALLp.
-        move: (dom DOMp Cl) => [Lp] lCpl.
-        move: (dom_updC (look P.1 p) lCpl)=>DOMp'.
-        move: (same_dom_trans DOMp DOMp')=>{}DOMp'.
-        apply: (iprj_send2 pT FT DOMp'); last by rewrite /updC eq_refl.
-        move=> l0 Ty0 G0 G'; rewrite /updC.
-        case: (boolP (l == l0))=>[/eqP<-|NEQ].
-        * move=> Cl0 [EQ_Ty] <-; move: Cl0; rewrite Cl=>[][_ <-].
-          move: (PRJ1.1 p); rewrite /run_step/= ET.
-          move: (dom DOM Cl)=>[LT] lCTl; rewrite lCTl !eq_refl /= look_comm //.
-          by rewrite eq_sym.
-        * by apply/(ALLp l0 Ty0 G0 G' NEQ).
-    - move: PFT=>/eqP-PFT; apply: (qprj_some Cl PFT).
-      move: PFT=>/eqP-PFT; move: (dom DOM Cl)=>[L] lCtl.
-      by move: PRJ1.2; rewrite /run_step/= ET lCtl !eq_refl/= PFT.
+      + move: FT; rewrite eq_sym llT =>TF.
+        apply (iprj_recv true TF)=>//=.
+        by move: (PRJ.1 T); rewrite /run_step/= llT !eq_refl/= look_same.
+      + move: (PRJ.1 p); rewrite /run_step/= llT !eq_refl/=.
+        rewrite look_comm; [|by rewrite eq_sym].
+        by move=> IPRJ; apply iprj_send2.
+    - by move: PRJ.2; apply: qprj_some; rewrite /run_step/= llT !eq_refl/= dq.
   Qed.
 
-  (* Not quite right yet *)
+  (*here*)
+
+(*  (* Not quite right yet *)
   Lemma  proj_same l C0 C1 F T E :
     same_dom C0 C1 ->
     (forall l' K, l != l' -> C0 l' = Some K <-> C1 l' = Some K) ->
@@ -3788,49 +3770,42 @@ Section TraceEquiv.
       move _: DOM => DOM'; move:DOM'=>/same_dom_sym/same_dom_trans/(_ DOMp)-{}DOMp.
       exists lCp; split=>// l' Ty' G' L' NE C1l lCl.
       by apply/(ALLp _ _ _ _ _ lCl)/SAME_C.
-  Qed.
+  Qed.*)
 
   Lemma runstep_proj G P : forall A G',
-    step A G G' -> Projection simple_co_merge G P -> Projection simple_co_merge G' (run_step A P).
+      step A G G' ->
+      Projection G P ->
+      Projection G' (run_step A P).
   Proof.
-    move=> A G' ST PRJ; elim: ST=>
-    [ l F T C Ty G0 Cl
-    | l F T C Ty G0 Cl
-    | {}A l F T C0 C1 aF aT NE DOM STEP Ih
-    | {}A l F T C0 C1 aT DOM STEP Ih
-    | {}A CG G0 STEP Ih
-    ]/= in P PRJ *.
-    - by apply: (Projection_send Cl).
-    - by apply: (Projection_recv Cl).
-    - move: (IProj_send1_inv (PRJ.1 F))=>[FT] [lCF] [EF] [DOMF] _.
-      move: (IProj_recv_inv (PRJ.1 T))=>[_] [lCT] [ET] [DOMT] _.
-      move: EF; rewrite -(look_act _ aF)=>{}EF.
-      move: ET; rewrite -(look_act _ aT)=>{}ET.
-      move _: DOM=>DOM1; move: DOM1=>/same_dom_sym-DOM1.
-      move: (same_dom_trans DOM1 DOMF) (same_dom_trans DOM1 DOMT)=>{}DOMF {}DOMT.
-      move: NE=>[Ty] [Gl] /(dom DOM)-[G1] C1l.
-      move: PRJ.2=>/qProject_None_inv-[QPRJ] _.
-      suff Ih': PAll simple_co_merge C1 (fun L Ty => send_recv F T L Ty (run_step A P))
-        by apply: (Proj_send_undo FT C1l DOMF DOMT) =>//; rewrite queue_act.
-      move=>l0 Ty0 {}G1 {}C1l; move: (dom' DOM C1l)=>[G0 C0l].
-      move: (Proj_None_next PRJ C0l)=>PRJ0; rewrite /send_recv.
-      rewrite -(run_stepC (A:=A)) ?aT //= -(run_stepC (A:=A)) ?aF ?aT //=.
-      by apply: Ih; [apply: C0l | apply: C1l |].
-    - move: Ih=>[SAME_C] [Tyl] [G0] [G1] [C0l] [C1l] [STEP_G0_G1] Ih.
-      move: (Projection_runnable C0l PRJ) => RUN.
-      move: (IProj_recv_inv (PRJ.1 T))=>[FT] [lCT] [ET] [DOMT] PRJT.
-      move: ET; rewrite -(look_act _ aT)=>{}ET.
-      move _: DOM=> DOM1; move: DOM1=>/same_dom_sym-DOM1.
-      move: (same_dom_trans DOM1 DOMT)=>{}DOMT.
-      move: PRJ.2=>/qProject_Some_inv-[Ty] [G2] [Q'] [].
-      rewrite C0l=>[][<-<-] [/eqP/(deq_act aT)-DEQ] _ {Ty G2}.
-      move: (proj_same DOM SAME_C PRJ.1)=>PRJ_C1.
-      move: (Proj_Some_next PRJ)=>/(_ _ _ C0l)/Ih.
-      rewrite run_stepC ?RUN ?orbT // => {}Ih.
-      apply: (Proj_recv_undo FT C1l ET DOMT _ DEQ PRJ_C1)=>//.
-      move=>l0 Ty0 G2 L ll0 /(SAME_C _ _ ll0)-Cl0 lCT0.
-      by apply/(PRJT _ _ _ _ Cl0).
-    - by apply/Ih/Projection_unr.
+    move=> A G' ST; move: P; elim: ST=>
+    [ F T t G0 P
+    | F T t G0 P
+    | {}A F T t G0 G1 AF AT st IH P PRJ
+    | {}A F T t G0 G1 AT st IH P PRJ
+    | {}A G0 G0' st IH P
+    ]/=.
+    - by apply: Projection_send.
+    - by apply: Projection_recv.
+    - move: (IProj_send1_inv (PRJ.1 F))=>[FT [[t' L'] [llF [/=tt' IPROJF]]]].
+      move: (IProj_recv_inv (PRJ.1 T))=>[_ [[t'' L''] [llT [/=tt'' IPROJT]]]].
+      move: llF; rewrite -(look_act _ AF)=>{}llF.
+      move: llT; rewrite -(look_act _ AT)=>{}llT.
+      rewrite -tt' in llF; rewrite -tt'' in llT.
+      move: (Proj_false_next PRJ)=>PRJ0.
+      apply: (Proj_send_undo FT llF llT);
+        [|by move: PRJ.2=>/qProject_false_inv-[QPRJ] _; rewrite queue_act].
+      rewrite /send_recv.
+      rewrite -(run_stepC (A:=A)) ?AT//= -(run_stepC (A:=A)) ?AF ?AT//=.
+        by apply IH.
+    - move: (Projection_runnable PRJ)=>RUN.
+      move: (IProj_recv_inv (PRJ.1 T))=>[FT [[t' L'] []]].
+      rewrite -(look_act _ AT)=> llT [/=tt' IPROJT].
+      rewrite -tt' in llT; move: (Proj_true_next PRJ)=>/IH.
+      rewrite run_stepC/= ?RUN ?orbT//==>PRJ0.
+      Search run_step.
+      move: PRJ.2=>/qProject_true_inv[Q' [/eqP/(deq_act AT)-DQ QPRJ]].
+      by apply: (Proj_recv_undo FT llT DQ PRJ0).
+    - by move=>/Projection_unr; apply IH.
   Qed.
 
   Definition payload A :=
