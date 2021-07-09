@@ -1,0 +1,283 @@
+\section{Smol Zooid}
+
+\subsection{Processes}
+
+\begin{frame}
+    \frametitle{Goals}
+    \begin{sticky}
+    \begin{itemize}
+    \item Certifying processes
+    \item Extracting runnable code
+    \item Avoiding complex formalisations of binders, whenever possible
+    \end{itemize}
+    \end{sticky}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Smol Zooid}
+    \begin{greenbox}{}
+    \begin{itemize}
+    \item We combine \textbf{shallow/deep embeddings} of binders
+    \begin{itemize}
+    \item We use DeBruijn indices for the deeply embedded binders
+    \end{itemize}
+    \item SZooid constructs are \textbf{well-typed by construction}
+    \item We leverage \textbf{Coq code extraction} mechanism
+    \item For simplicity, SZooid does not cover \emph{choices}
+    \end{itemize}
+    \end{greenbox}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Core Processes}
+    \begin{minted}{coq}
+Inductive proc :=
+| Inact
+| Rec (e : proc)
+| Jump (X : nat)
+| Send (p : participant) {T : type}
+     (x : interp_type T) (k : proc)
+| Recv (p : participant) {T : type}
+    (k : interp_type T -> proc)
+
+| ReadIO {T : type} (k : interp_type T -> proc)
+| WriteIO {T : type} (x : interp_type T) (k : proc)
+.
+    \end{minted}    
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Payload Types}
+    We need to define a type for payload types:
+    \begin{itemize}
+    \item We need a decidable equality on payload types
+    \item We need a decidable equality on payload values
+    \end{itemize}
+\vspace{1cm}
+    \begin{minted}{coq}
+Inductive type := Nat | Bool | ...
+Definition interp_type : type -> Type := ...
+    \end{minted}
+\end{frame}
+
+\subsection{Traces}
+
+\begin{frame}[fragile]
+    \frametitle{Semantics: Recursion Variables and I/O}
+\begin{itemize}
+    \item We need some functions to handle recursion variables
+    \item \texttt{p\_unroll} exposes the first communication action in a process by
+    ``running'' any I/O action, and unfolding recursion
+    \item I/O actions are handled using \textbf{parameters} that will be instantiated
+only in the OCaml side, when doing code extraction
+\end{itemize}
+\vspace{1cm}
+    \begin{minted}{coq}
+Variable readIO : forall {T}, unit -> interp_type T.
+Variable writeIO : forall {T}, interp_type T -> unit.
+
+Definition p_subst : nat -> proc -> proc := ...
+Definition p_unroll : proc -> proc := ...
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Semantics: events}
+    The semantics is an LTS: 
+    \begin{itemize}
+    \item the labels are the \textbf{communication events}
+    \item it is parameterised by a \textbf{payload interpretation function}
+    \end{itemize}
+\vspace{.5cm}
+    \begin{minted}{coq}
+Inductive action := a_send | a_recv.
+Record event interp_payload :=
+  { action_type  : action;
+    subj         : participant;
+    party        : participant;
+    payload_type : type;
+    payload      : interp_payload payload_type
+  }.
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Semantics: step}
+The step of the LTS is defined as a \textbf{function}:
+\vspace{.5cm}
+    \begin{minted}{coq}
+Definition step' e E :=
+  match e with
+  | Send p T x k =>
+    if (action_type E == a_send) && (party E == p) &&
+       (eq_payload (payload E) x)
+    then Some k else None
+  | Recv p T k => ...  | _ => None
+  end.
+Definition step e := step' (p_unroll e).
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Semantics: traces}
+Traces are generated coinductively, by the greatest fixpoint of:
+\vspace{.5cm}
+    \begin{minted}{coq}
+Definition R_trace := rt_trace -> proc -> Prop.
+Inductive proc_lts_ p (G : R_trace) : R_trace :=
+  | p_end :
+      @proc_lts_ p G tr_end Inact
+  | p_next E TRC e e' :
+      subj E == p ->
+      step e E = Some e' ->
+      G TRC e' ->
+      @proc_lts_ p G (tr_next E TRC) e.
+    \end{minted}
+\end{frame}
+
+\subsection{Local Types}
+
+\begin{frame}[fragile]
+    \frametitle{Local Types}
+    We introduce a typing discipline that associates processes with \textbf{local types}, that 
+characterise their communication behaviour:
+
+    \begin{minted}{coq}
+Inductive lty :=
+  | l_end
+  | l_jump (X : nat)
+  | l_rec (k : lty)
+  | l_send (p : participant) (T : type) (l : lty)
+  | l_recv (p : participant) (T : type) (l : lty)
+.
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Type System}
+    \begin{minted}{coq}
+Inductive of_lty : proc -> lty -> Prop :=
+| lt_Send    p T k L x :
+    of_lty k L -> of_lty (@Send p T x k) (l_send p T L)
+| lt_ReadIO  T k L :
+    (forall x, of_lty (k x) L) -> of_lty (@ReadIO T k) L
+| ...
+.
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Smol Zooid: Smart Constructors (I)}
+    \begin{sticky}
+\vspace{-.5cm}
+    \begin{itemize}
+        \item It would be tedious to type up both a local type and a process
+        \item Users would need to provide a proof that processes are well-typed
+    \end{itemize}
+    \end{sticky}
+    \begin{greenbox}{}
+        We define \textbf{SZooid} (Smol Zooid), to write
+well-typed processes by construction, avoiding repetition.
+    \end{greenbox}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Smol Zooid: Smart Constructors (and II)}
+\begin{minted}{coq}
+Definition SZooid L := { p | of_lty p L}.
+
+Definition z_Send  p T x L (k : SZooid L)
+  : SZooid (l_send p T L)
+  := exist _ _ (lt_Send p x (proj2_sig k)).
+...
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Inferring Local Types}
+    SZooid constructs fully determine their types from their inputs, so we can ask Coq to \emph{infer} local types
+associated with SZooid terms:
+\vspace{1cm}
+\begin{minted}{coq}
+Definition AZooid := { L & SZooid L }.
+\end{minted}
+\end{frame}
+
+\subsection{Preservation}
+
+\begin{frame}[fragile]
+\frametitle{Preservation}
+\begin{minted}{coq}
+Theorem preservation (e : proc) (L : lty) 
+    (H : of_lty e L) (E : rt_event) :
+  forall e',
+    step e E = Some e' ->
+      exists L', lstep L (ev_erase E) = Some L' /\
+                 of_lty e' L'.
+\end{minted}
+\end{frame}
+
+\subsection{Extraction}
+
+\begin{frame}[fragile]
+\frametitle{Extraction}
+\begin{itemize}
+\item We recursively traverse processes, and replace constructors to function calls in an \textbf{ambient monad} that specifies \textbf{how} to execute the programs
+\item The ambient monad needs to be implemented in OCaml
+\item Processes are extracted using Higher-Order modules, so it is straightforward to change the underlying
+transport
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Process Monad (I)}
+\begin{minted}{coq}
+Module Type ProcessMonad.
+  Parameter t : Type -> Type.
+
+  Parameter run : forall {A}, t A -> A.
+  Parameter bind 
+    : forall {T1 T2}, t T1 -> (T1 -> t T2) -> t T2.
+  Parameter pure : forall {T1}, T1 -> t T1.
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Process Monad (and II)}
+\begin{minted}{coq}
+  Parameter send 
+    : forall T, participant -> interp_type T -> t unit.
+  Parameter recv
+    : forall T, participant -> t (interp_type T).
+
+  Parameter loop 
+    : forall {T1}, nat -> (unit -> t T1) -> t T1.
+  Parameter set_current: nat -> t unit.
+End ProcessMonad.
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Example Extraction}
+\begin{minted}{coq}
+Module  ALICE (MP : ProcessMonad) : PROCESS_FUNCTOR(MP).
+  Module PE := ProcExtraction(MP).
+  Module PM := MP.
+  Definition proc :=
+    Eval compute in PE.extract_proc 0 alice.
+End ALICE.
+
+Extraction ALICE.
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Summary}
+\begin{sticky}
+\begin{itemize}
+\item We have seen how to encode a small calculus of Multiparty Processes, with a basic type system
+\item Choices complicate the formalisation substatially
+\item \textbf{Next: how do we relate traces of individual processes to a larger system?}
+\end{itemize}
+\end{sticky}
+\end{frame}
