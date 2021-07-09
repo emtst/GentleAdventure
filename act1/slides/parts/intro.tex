@@ -1,17 +1,57 @@
 \section{Introduction}
 
-\endinput
+% \endinput
 \begin{frame}
   \vfill
   \centering
   %\begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{block}
   \begin{sticky}
     \usebeamerfont{title}{\underline{Part I:}} \\
-    {\normalfont\Large Introduction to Concurrent Programming in Java --
-    Deadlocks} \par%
+    {\normalfont\Large Locally Nameless at a glance} \par%
   \end{sticky}
   %\end{beamercolorbox}
   \vfill
+\end{frame}
+
+\newcommand{\bvar}[1]{\ensuremath{#1}}
+\newcommand{\fvar}[1]{\ensuremath{#1}}
+\newcommand{\lam}[1]{\ensuremath{\lambda\mathrel{.}{#1}}}
+\newcommand{\app}[2]{\ensuremath{{#1}\,{#2}}}
+\newcommand{\base}[0]{\ensuremath{\texttt{base}}}
+\newcommand{\arr}[2]{\ensuremath{{#1}\to{#2}}}
+
+\newcommand{\loft}[3]{\ensuremath{{#1}\mathrel{\vdash}{#2}\mathrel{:}{#3}}}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+  \begin{block}{Syntax:}
+    \begin{displaymath}
+      \begin{array}{rrcl}
+        \text{Terms} & M, N & \mathrel{::=} & \bvar n \mid \fvar x \mid \lam M \mid \app M N\\
+        \text{Types} & S, T & \mathrel{::=} & \base \mid \arr S T\\
+      \end{array}
+    \end{displaymath}
+
+  \end{block}
+  \begin{block}{Locally Nameless Operations:}
+    \begin{displaymath}
+      \begin{array}{cc}
+        \open &
+      \end{array}
+    \end{displaymath}
+  \end{block}
+  \begin{block}{Typing:}
+      \begin{mathpar}\centering
+        \inferrule{\Gamma(\fvar x) = T}{\loft\Gamma{\fvar x}{T}} \and
+
+        \inferrule{\loft\Gamma M {\arr S T} \\ \loft\Gamma N S}
+        {\loft\Gamma{\app M N} T} \and
+
+        \inferrule{\forall x \notin L \\ \loft{\Gamma, x\oft S}{M}T}
+        {\loft\Gamma{\lam M}{\arr S T}}
+      \end{mathpar}
+    \end{block}
+
 \end{frame}
 
 \begin{frame}
