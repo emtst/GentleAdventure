@@ -156,6 +156,13 @@
 %\renewcommand{\Set}{\TC{{Set}}}
 
 
+\newcommand\blfootnote[1]{%
+\begingroup
+\renewcommand\thefootnote{}\footnote{#1}%
+\addtocounter{footnote}{-1}%
+\endgroup
+}
+
 \begin{document}
 
 \begin{frame}
@@ -201,7 +208,7 @@
 	    \node  at (-2.4,1.2) {\small  typing ($\ofLt$)};
 	\end{tikzpicture}
 \end{figure}
-
+\blfootnote{\scriptsize K. Honda, N. Yoshida, and M. Carbone. \emph{Multiparty asynchronous session types}. POPL '08}
 
 \end{frame}
 
@@ -211,6 +218,9 @@
   \begin{figure}
 \input{thediagram.tex}
 \end{figure}
+
+\blfootnote{\scriptsize D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.
+  \emph{Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes}. PLDI 2021}
 
 \end{frame}
 
@@ -420,7 +430,8 @@ then $\coproj \pr \coG \colT$.
         \begin{proof}
           By coinduction. :)
         \end{proof}
-\end{small}
+ \end{small}
+ \blfootnote{\scriptsize The Paco Library for Coq: https://plv.mpi-sws.org/paco/ }
 \end{frame}
 
 \begin{frame}{Type Semantics for Zooid}
@@ -548,7 +559,32 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 
 \begin{frame}{Lemma, to give the flavour}
 
+
+
+\begin{footnotesize}
+
+$\p$ sends:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
+\& \&
+\coG\arrow[dd, "\upharpoonright_{\p}"] \\
+\& \& \& \&\\
+\colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
+\end{tikzcd}
+\]
+\end{footnotesize}
+
+\ \\ \ \\
+
+
+\begin{center}
+
 $\longrightarrow$ Coq!
+
+  \end{center}
 
 \end{frame}
 
@@ -563,21 +599,30 @@ $\longrightarrow$ Coq!
     \end{itemize}
 
   \end{small}
-
+\ \\
 
   \visible<2->{
   \begin{center}
-      \includegraphics[width=0.35\textwidth]{napalm.jpg}
+      \includegraphics[width=0.4\textwidth]{napalm.jpg}
 
 
-\begin{footnotesize}
+\begin{small}
 \emph{``You need to stay focused. Otherwise you miss the subtleties!''} \footnote<2->{\tiny Barney Greenway (Napalm Death), after suprising the audience with a blitz performance of ``You Suffer''.}
-\end{footnotesize}
+\end{small}
   \end{center}
 
 }
 \end{frame}
 \begin{frame}
+\begin{footnotesize}
+  D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.\\[2mm]
+  \emph{Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes''}\\[2mm]
+  PLDI 2021. DOI: https://doi.org/10.1145/3453483.3454041\\
+  website: http://mrg.doc.ic.ac.uk/publications/zooid-paper/\\ \ \\
+
+
+  This tutorial repo (soon to be ready): ?!
+\end{footnotesize}
 
   \begin{center}
     Thank You!
