@@ -277,53 +277,6 @@ Inductive oft : sort_env -> proc -> tp_env -> Prop :=
 
 (*****************************)
 
-(* shorthand to have induction over oft with consistent naming *)
-Ltac induction_oft :=
-  let L := fresh "L" in
-  let L' := fresh "L" in
-  let a := fresh "a" in
-  let D1 := fresh "D1" in
-  let D2 := fresh "D2" in
-  let s := fresh "s" in
-  let t := fresh "t" in
-  let T := fresh "T" in
-  let T' := fresh "T'" in
-  let k := fresh "k" in
-  let kt := fresh "kt" in
-  let k0 := fresh "k0" in
-  let k1 := fresh "k1" in
-  let Bnd := fresh "Bnd" in
-  let Oft_e := fresh "Oft_e" in
-  let OftP := fresh "OftP" in
-  let CompD := fresh "CompD" in
-  let OftQ := fresh "OftQ" in
-  let Def_kk'D := fresh "Def_kk'D" in
-  let Def_G := fresh "Def_G" in
-  let Ih := fresh "Ih" in
-  let IhP := fresh "IhP" in
-  let IhQ := fresh "IhQ" in
-  match goal with
-  | [ |- oft ?G ?P ?D -> _ ] =>
-    elim
-    => {G}{P}{D}
-          [ L L' G a P D t Bnd OftP Ih
-          | L L' G a P D t Bnd OftP Ih
-          | G kt e P D S T Oft_e OftP Ih
-          | L G kt P D S T OftP Ih
-          | G k0 P D T T' OftP Ih
-          | G k0 P D T T' OftP Ih
-          | G k0 P Q D T T' OftP IhP OftQ IhQ
-          | G k0 k1 P D T T' OftP Ih Def_kk'D
-          | L L' G k0 P D T T' OftP Ih
-          | G e P Q D Oft_e OftP IhP OftQ IhQ
-          | G P Q D1 D2 OftP IhP OftQ IhQ Def_D12
-          | G D CompD DefG
-          | L G s P D OftP Ih
-          | G P D T L OftP Ih
-          | G P D OftP Ih
-          | G P D CompD OftP Ih
-          ] /=
-  end.
 
 Derive Inversion oft_inv with (forall G P D, oft G P D) Sort Prop.
 Derive Inversion oft_inv_par with (forall G P Q D, oft G (par P Q) D) Sort Prop.
@@ -335,15 +288,6 @@ Proof.
   elim/oft_inv_par => _ G0 P1 Q0 D1 D2 oftP oftQ Hdef _ _ _ _.
   by exists D1, D2.
 Qed.
-
-(* Lemma oft_par_inv G P Q D : *)
-(*   oft G (par P Q) D -> exists D1 D2, *)
-(*     def (union D1 D2) /\ (union D1 D2 = D) /\ oft G P D1 /\ oft G Q D2. *)
-(* Proof. *)
-(*   elim/oft_inv_par => _ G0 P1 Q0 D1 D2 oftP oftQ Hdef _ _ _ _. *)
-(*   by exists D1, D2. *)
-(* Qed. *)
-
 
 Lemma oft_send_inv c e P D G :
   oft G (send c e P) D ->
@@ -387,50 +331,17 @@ Qed.
 Lemma oft_lc G P D:
   oft G P D -> lc P.
 Proof.
-(*   elim ; intros. *)
-(*   by apply: lc_send ; [apply: lc_chanofentry | apply: oft_exp_lc ; apply H|]. *)
-(*   by apply: lc_receive ; [ apply: lc_chanofentry | apply H0]. *)
-(*   by apply: lc_ife ; first (apply: oft_exp_lc ; apply H) ; assumption. *)
-(*   by apply: lc_par ; assumption. *)
-(*   by apply: lc_inact ; assumption. *)
-(*   by apply: lc_nu ; apply H0. *)
-(*   (* by apply: lc_nu_ch ; apply H0. *) *)
-(*   (* by apply: (lc_nu_ch (L:=[::]))=> k k_ninL; rewrite /open_k0 -opk_lc. *) *)
-(*   by apply: lc_bang. *)
-(* Qed. *)
 Admitted.
 
 Lemma oft_def G P D:
   oft G P D -> def D.
 Proof.
-(*   induction_oft; try (move: Ih); try (move: IhQ); *)
-(*    try (move => /(_ (LC.fresh L) (LC.fresh_not_in L))); *)
-(*    try (move => /(_ (inl (LC.fresh L)) (LC.fresh_not_in L))); *)
-(*    try (move => /(_ (EV.fresh L) (EV.fresh_not_in L))); *)
-(*    try (move => /(_ (SC.fresh L) (SC.fresh_not_in L))); *)
-(*    try (move => /(_ (CN.fresh L) (CN.fresh_not_in L))); *)
-(*    try easy; *)
-(*    try (by move/def_diff_value); *)
-(*    try (by move/def_nested); *)
-(*    try (by move/def_nested/def_nested); *)
-(*    try (by move/def_nested/def_diff_value); *)
-(*    try (by move: CompD; rewrite /completed =>[][]). *)
-(* Qed. *)
 Admitted.
 
 
 Lemma oft_def_ctx G P D:
   oft G P D -> def G.
 Proof.
-(*   induction_oft=>//; try (move: Ih); try (move: IhQ); *)
-(*   try (move => /(_ (inl (LC.fresh L)) (LC.fresh_not_in L))); *)
-(*   try (move => /(_ (LC.fresh L) (LC.fresh_not_in L))); *)
-(*   try (move => /(_ (EV.fresh L) (EV.fresh_not_in L))); *)
-(*   try (move => /(_ (SC.fresh L) (SC.fresh_not_in L))); *)
-(*   try (move => /(_ (CN.fresh L) (CN.fresh_not_in L))); *)
-(*   try (by move/def_nested); *)
-(*   try easy. *)
-(* Qed. *)
 Admitted.
 
 Lemma oft_exp_def_ctx G E S:
@@ -443,23 +354,12 @@ Qed.
 
 (* Meta-theory *)
 
-(* NEIN *)
-(* Lemma subst_exp_proc_open_var x y e P: *)
-(*   lc_exp e -> *)
-(*   (s[ x ~> e ]pe open_c0 P y) = (open_c0 (s[ x ~> e ]pe P) y). *)
-(* Proof. *)
-(*   by move=> lc_e; rewrite /open_c0; move: 0 => n; by_proc_induction2 P n y. *)
-(* Qed. *)
-
 Lemma subst_ch_same c c' : s[ c ~> c ]c c' = c'.
 Proof.
   by case: c'=>// ; rewrite /subst_ch=> a ; case: ifP =>// /eqP->.
 Qed.
 
 Lemma subst_chan_same c P : s[c ~> c]p P = P.
-(* Proof. *)
-(*   by_proc_induction0 P; rewrite !subst_ch_same=>//. *)
-(* Qed. *)
 Admitted.
 
 Lemma subst_exp_proc_open_exp x y e P:
@@ -467,16 +367,6 @@ Lemma subst_exp_proc_open_exp x y e P:
   lc_exp e ->
   (s[ x ~> e ]pe open_e0 P y) = (open_e0 (s[ x ~> e ]pe P) y).
 Proof.
-(*   move=> xy lc_e; rewrite /open_e0; move: 0 => n; by_proc_induction P n =>//. *)
-(*   + rewrite /ope; case: H4 =>//; *)
-(*       rewrite /EV.open_var /subst_exp; case=>// an; case: ifP=>///eqP->. *)
-(*     by case: lc_e=>//. *)
-(*     by move: xy => /negPf->. *)
-(*   + rewrite /ope; case: H4 =>//; *)
-(*       rewrite /EV.open_var /subst_exp; case=>// an; case: ifP=>///eqP->. *)
-(*     by case: lc_e=>//. *)
-(*     by move: xy => /negPf->. *)
-(* Qed. *)
 Admitted.
 
 Lemma subst_exp_ope x y n e :
@@ -490,59 +380,26 @@ Qed.
 Lemma subst_exp_open_e x y P :
   x \notin fev_proc P ->
   s[ x ~> y ]pe open_e0 P x = open_e0 P y.
-(* Proof. *)
-(*   rewrite /open_e0; move: 0. *)
-(*   elim: P *)
-(*   => [ c e p IH *)
-(*      | c p IH *)
-(*      | e p1 IH1 p2 IH2 *)
-(*      | p1 IH1 p2 IH2 *)
-(*      | *)
-(*      | p IH *)
-(*      | p IH] n /=. *)
-(*   try (rewrite !mem_cat !negb_or); *)
-(*   try (move => /andP-[nin1 /andP-[nin2 nin3]]); *)
-(*   try (move => /andP-[nin1 nin2]); *)
-(*   try (move=>x_notin); *)
-(*   try (rewrite IH =>//); *)
-(*   try (rewrite IH1 =>//); *)
-(*   try (rewrite IH2 =>//); *)
-(*   try (rewrite subst_exp_ope =>//); *)
-(*   easy. *)
-(* Qed. *)
 Admitted.
 
 
 Lemma subst_chan_openk_var x u n k ch :
   CH.lc u -> s[ x ~> u ]c opk n k ch = opk n k (s[ x ~> u ]c ch).
 Proof.
-(*   rewrite /opk/subst_ch; case: ch =>//[[]|]// []// a. *)
-(*   case: ifP=>// _; elim=>//. *)
-(* Qed. *)
 Admitted.
 
 Lemma subst_proc_openk_var x k u P:
   (* x != y -> *) CH.lc u ->
   (s[ x ~> u ]p open_k0 P k) = (open_k0 (s[ x ~> u ]p P) k).
-(* Proof. *)
-(*   move=> lc_ch; rewrite /open_k0; move: 0 => n; by_proc_induction P n =>//; *)
-(*   rewrite !subst_chan_openk_var //. *)
-(* Qed. *)
 Admitted.
 
 Lemma subst_exp_openk_var x k e P:
   (* x != y -> *) lc_exp e ->
   (s[ x ~> e ]pe open_k0 P k) = (open_k0 (s[ x ~> e ]pe P) k).
-(* Proof. *)
-(*   move=> lc_ch; rewrite /open_k0; move: 0 => n; by_proc_induction P n =>//. *)
-(* Qed. *)
 Admitted.
 
 Lemma subst_proc_open_e x k u P:
   (s[ x ~> u ]p open_e0 P k) = (open_e0 (s[ x ~> u ]p P) k).
-(* Proof. *)
-(*   by rewrite /open_e0; move: 0 => n; by_proc_induction P n. *)
-(* Qed. *)
 Admitted.
 
 (* Some weakening lemmas *)
@@ -556,151 +413,10 @@ Proof.
   by apply H0.
 Qed.
 
-(* Lemma str_ctx_oft_exp G E x S S': *)
-(*   x \notin fv_exp E -> *)
-(*   oft_exp (add (inr x) S' G) E S -> oft_exp G E S. *)
-(* Proof. *)
-(*   move=>nin Hoft; move: Hoft nin. *)
-(*   case=>[/def_nested/t_tt|/def_nested/t_ff|y S'' hBinds]/=//. *)
-(*   rewrite in_cons negb_or=>/andP-[neq _]. *)
-(*   by apply:t_var;apply:(binds_next _ hBinds);rewrite -[inr _==_]/(y==x) eq_sym. *)
-(* Qed. *)
-
-(* Lemma str_ctx_nm_oft_exp G E x S S': *)
-(*   oft_exp (add (inl x) S' G) E S -> oft_exp G E S. *)
-(* Proof. *)
-(*   case=>[/def_nested/t_tt|/def_nested/t_ff|y S'' hBinds]/=//. *)
-(*   by apply:t_var;apply:(binds_next _ hBinds). *)
-(* Qed. *)
-
-(* Lemma str_ctx_oft_proc x S S' P G : *)
-(*   x \notin fv_e P -> *)
-(*   oft (add (inr x) S' G) P S -> oft G P S. *)
-(* Proof. *)
-(*   move Eq: (add (inr x) S' G) => G' notin Hoft. *)
-(*   elim: Hoft notin G Eq =>/=//; rewrite ?mem_cat ?negb_or. *)
-(*   + move=> L L' {G'} G0 a {P} P D t Hbinds Hoft IH notin G Eq. *)
-(*     have ax : inl a != inr x by []. *)
-(*     move: Eq Hoft IH Hbinds =><- {G0} Hoft IH /(binds_next ax)-Hbnd. *)
-(*     apply: (t_request Hbnd (L:=L) (L':=L')) => c fc; apply: (IH _ fc)=>//. *)
-(*     by rewrite fve_openc. *)
-(*   + move=> L L' {G'} G0 a {P} P D t Hbinds Hoft IH notin G Eq. *)
-(*     have ax : inl a != inr x by []. *)
-(*     move: Eq Hoft IH Hbinds =><- {G0} Hoft IH /(binds_next ax)-Hbnd. *)
-(*     apply: (t_accept Hbnd (L:=L) (L':=L')) => c fc; apply: (IH _ fc)=>//. *)
-(*     by rewrite fve_openc. *)
-(*   + move=> G0 k e P0 D S0 T Oe Op IH nin G EqG. *)
-(*     move: EqG Oe Op IH =><- Oe Op IH. *)
-(*     move: nin; rewrite mem_cat negb_or=>/andP-[nin1 nin2]. *)
-(*     apply: t_send; first by apply: (str_ctx_oft_exp nin1 Oe). *)
-(*     by apply: IH. *)
-(*   + move=> L G k P0 D S0 T Hoft IH nin G0 EqG; move: EqG Hoft IH =><- Hoft IH. *)
-(*     apply: (t_receive (L:=fv_e P0 ++ L)) => x0. *)
-(*     rewrite mem_cat negb_or=>/andP-[nin1 nin2]. *)
-(*     move: (Hoft x0 nin2) => /oft_def_ctx; rewrite def_add =>[][neq Da]. *)
-(*     move: neq; rewrite notin_add // -[inr _ == _]/(x0 == x) => /andP-[neq _]. *)
-(*     move: neq; rewrite [in x0 != _](eq_sym)=>neq. *)
-(*     have nix: x \notin fv_exp x0 by rewrite in_cons in_nil negb_or andbC /= neq. *)
-(*     by move: (IH x0 nin2 (fve_opene nix nin)) => I; apply: I; apply/add_swap. *)
-(*   + move=> G k P0 D T T' Hoft IH nin G0 EqG. *)
-(*     move: EqG IH Hoft =><- /(_ nin G0 (eqP (eq_refl _)))-IH Hoft. *)
-(*     by apply: t_select_l. *)
-(*   + move=> G k P0 D T T' Hoft IH nin G0 EqG. *)
-(*     move: EqG IH Hoft =><- /(_ nin G0 (eqP (eq_refl _)))-IH Hoft. *)
-(*     by apply: t_select_r. *)
-(*   + move=> G k P0 Q D T T' _ IH1 _ IH2. *)
-(*     rewrite mem_cat negb_or=>/andP-[/IH1-{IH1}IH1 /IH2-{IH2}IH2] G0 Eq. *)
-(*     move: Eq IH1 IH2=><-/(_ G0)-IH1 /(_ G0)-IH2. *)
-(*     by apply: t_branch; [apply: IH1 | apply: IH2]. *)
-(*   + move=> G k k' P0 D T T' Hoft1 IH1 Hdef /IH1-{IH1}IH1 G0 EqG. *)
-(*     by move: EqG IH1=><- IH1; apply: t_throw =>//; apply: IH1. *)
-(*   + move=> L L' G k P0 D T T' _ IH nin G0 Eq. *)
-(*     move: Eq IH=><-IH; apply: (t_catch (L:=L) (L':=L')) => x0 nin0. *)
-(*     by move: (IH x0 nin0); rewrite fve_openc => /(_ nin G0)-{IH}IH; apply:IH. *)
-(*   + move=> G e P0 Q D Oe Op IH1 Oq IH2. *)
-(*     rewrite !mem_cat !negb_or =>/andP-[nin1 /andP-[nin2 nin3]] G0 Eq. *)
-(*     move: Eq Oe IH1 IH2=><- Oe IH1 IH2. *)
-(*     by apply: t_ife; [apply: (str_ctx_oft_exp nin1 Oe)|apply: IH1|apply: IH2]. *)
-(*   + move=> G P0 Q D1 D2 _ IH1 _ IH2 Hdef. *)
-(*     rewrite mem_cat negb_or=>/andP-[/IH1-{IH1}IH1 /IH2-{IH2}IH2] => G0 Eq. *)
-(*     by move: (IH1 G0 Eq) (IH2 G0 Eq) => {IH1}IH1 {IH2}IH2; apply: t_par. *)
-(*   + move=> G D Hc Hdef _ G0 Eq0; apply: t_inact=>//. *)
-(*     by move: Eq0 Hdef=><- /def_nested-Hdef. *)
-(*   + move=>L G s P0 D _ IH xnotin G0 Eq; apply: (t_nu_nm (L:=L) (s:=s))=> x0 nin. *)
-(*     move: IH => /(_ x0 nin); rewrite fve_openn => /(_ xnotin)-IH. *)
-(*     by move: Eq IH=><-/(_ (add (ne x0) s G0))-IH; apply: IH; apply/add_swap. *)
-(*   + move=> G P0 D T L _ IH nin G0 Eq; apply: (t_nu_ch (L:=L) (T:=T))=> ki ki_nin. *)
-(*     by move: (IH ki ki_nin); rewrite fve_openk =>/(_ nin G0 Eq). *)
-(*   + by move=> G P0 D _ IH nin G0 Eq; apply: t_nu_ch'; apply: IH. *)
-(*   + by move=> G P0 D comp borr IH  nin G0 Eq'; apply: t_bang ; [easy| apply: IH]. *)
-(* Qed. *)
 
 Lemma wkn_ctx_oft G P D y S:
   oft G P D -> def (add y S G) -> oft (add y S G) P D.
-(* Proof. *)
-(*   move=> H. move: H S y. *)
-(*   elim ; intros. *)
-(*   { (* t_send *) *)
-(*     apply t_send. *)
-(*     apply: wkn_ctx_oft_exp. *)
-(*     by apply: H. *)
-(*     assumption. *)
-(*     apply H1. *)
-(*     assumption. *)
-(*   } *)
-(*   { (* t_receive *) *)
-(*     apply: (t_receive (L:=ea_dom (add y S0 G0) ++ L))=>x /not_in_app-[xy xL]. *)
-(*     move:(add_swap (ee x) y S S0 G0)=>->. *)
-(*     apply H0=>//. *)
-(*     move:(add_swap y (inr x) S0 S G0)=>->. *)
-(*     apply def_add_assumption with (k:=inr x)(T:=S) in H1=>//. *)
-(*     by apply: notin_eadom_dom. *)
-(*   } *)
-(*   { (* t_ife *) *)
-(*     apply: t_ife. *)
-(*     apply: wkn_ctx_oft_exp. *)
-(*     assumption. *)
-(*     assumption. *)
-(*     apply: H1 ; assumption. *)
-(*     apply: H3 ; assumption. *)
-(*   } *)
-(*   { (* t_par *) *)
-(*     apply: t_par. *)
-(*     apply: H0 ; assumption. *)
-(*     apply: H2 ; assumption. *)
-(*     assumption. *)
-(*   } *)
-(*   { (* inact *) *)
-(*     apply:t_inact ; assumption. *)
-(*   } *)
-(*   (* { (* t_nu_nm *) *) *)
-(*   (*   apply: t_nu_nm. *) *)
-(*   (*   intros. *) *)
-(*   (*   move:(add_swap (ne x) y s S G0)=>HH;erewrite HH. *) *)
-(*   (*   apply H0. *) *)
-(*   (*   have H2': x\notin (na_dom(add y S G0) ++ L) by apply: H2. *) *)
-(*   (*   move:H2' ; move/not_in_app. *) *)
-(*   (*   by intuition. *) *)
-(*   (*   move:(add_swap y (ne x) S s G0)=>->. *) *)
-(*   (*   apply: def_add_assumption =>//. *) *)
-(*   (*   move:H2 ; move/not_in_app. *) *)
-(*   (*   by move=>[[/notin_nadom_dom-dd _]]. *) *)
-(*   (* } *) *)
-(*   (* { (* t_nu_ch *) *) *)
-(*   (*   apply: t_nu_ch. *) *)
-(*   (*   intros. *) *)
-(*   (*   apply: H0. *) *)
-(*   (*   apply: H2. *) *)
-(*   (*   assumption. *) *)
-(*   (* } *) *)
-(*   (* { (* t_nu_ch' *) *) *)
-(*   (*   apply: t_nu_ch'. *) *)
-(*   (*   by apply: H0. *) *)
-(*   (* } *) *)
-(*   { (* t_bang *) *)
-(*     by constructor;[easy| apply: H1]. *)
-(*   } *)
-(* Qed. *)
+Proof.
 Admitted.
 
 Lemma TypeUniquenessExp G e S S':
@@ -742,66 +458,7 @@ Theorem ExpressionReplacement G P x E S D:
   oft_exp G E S ->
   oft G P D ->
   oft G (s[ x ~> E]pe P) D.
-(* Proof. *)
-(*   move=>Def Hd Hp. move: Def Hd. *)
-(*   elim Hp; intros ; *)
-(*   try (by constructor ; rewrite-/subst_proc_exp); *)
-(*   try (constructor ; rewrite-/subst_proc_exp //; by apply H1); *)
-(*   try (constructor ; rewrite-/subst_proc_exp //; by apply H2); *)
-(*   try (constructor ; rewrite-/subst_proc_exp //; by apply H3); *)
-(*   try (constructor ; rewrite-/subst_proc_exp //; by apply H0). *)
-(*   { (* send *) *)
-(*     constructor ; rewrite-/subst_proc_exp //; *)
-(*     intros. *)
-(*     rewrite/subst_proc_exp=>//. rewrite-/subst_proc_exp. (* do one step of subst_proc_exp *) *)
-(*     apply: SubstitutionLemmaExp. *)
-(*     apply: Def. *)
-(*     apply: Hd. *)
-(*     apply: H. *)
-(*     by apply: H1. *)
-(*   } *)
-(*   { (* receive *) *)
-(*     apply: t_receive. *)
-(*     rewrite-/subst_proc_exp. *)
-(*     intros. *)
-(*     have H1': x0\notin (x :: L) by apply: H1. *)
-(*     move: H1'. move/notin_cons. case=>Hdiff Hnotin. *)
-
-(*     (* rewrite-add_union. *) *)
-(*     rewrite-subst_exp_proc_open_exp. *)
-(*     + have def_add_x0: def (add x0 S0 G0) by  apply: oft_def_ctx; apply: H. *)
-(*       apply H0 =>//; first by apply: add_binds =>//; apply: neqC. *)
-(*       apply: wkn_ctx_oft_exp =>//. *)
-(*     + by apply: neqC. *)
-(*     + apply: oft_exp_lc. *)
-(*       apply Hd. *)
-(*   } *)
-(*   {constructor ; rewrite-/subst_proc_exp //; intros. *)
-(*    apply: H0 => //. *)
-(*    apply: H2 => //. *)
-(*   } *)
-(*   { constructor ; rewrite-/subst_proc_exp //; intros. *)
-(*       by apply: (SubstitutionLemmaExp Def). *)
-(*         by apply: H1. *)
-(*         by apply: H3. *)
-(*   } *)
-(*   {constructor ; rewrite-/subst_proc_exp //; intros. *)
-(*         by apply: H0. *)
-(*         by apply: H2. *)
-(*   } *)
-(*   { apply: (@t_nu_nm L); rewrite -/subst_proc_exp. *)
-(*     move => x0 x_nin_L. *)
-(*     rewrite -subst_exp_proc_open_name // ; [| apply: (oft_exp_lc Hd)]. *)
-(*     have def_add_x0_G0 : def (add (ne x0) s G0) by apply: oft_def_ctx; apply: H. *)
-(*     apply: H0 =>//; first by apply: binds_add =>//. *)
-(*     by apply: wkn_ctx_oft_exp. *)
-(*   } *)
-(*   { *)
-(*     apply: (t_nu_ch (L:=L)). rewrite -/subst_proc_exp => ki ki_nin. *)
-(*     rewrite -subst_exp_openk_var; [| apply: (oft_exp_lc Hd)]. *)
-(*     by apply: (H0 ki ki_nin). *)
-(*   } *)
-(* Qed. *)
+Proof.
 Admitted.
 
 Ltac split_notin i H1 H2:=
@@ -827,17 +484,7 @@ Lemma subst_nm_oft_exp a a' G e S :
   def (subst_env a a' G) ->
   oft_exp G e S ->
   oft_exp (subst_env a a' G) e S.
-(* Proof. *)
-(*   move=> Hdef; case=>[_|_|x Sx Hbnd]. *)
-(*   by apply: t_tt. *)
-(*   by apply: t_ff. *)
-(*   apply: t_var; move: Hbnd; case: G Hdef=>//f. *)
-(*   rewrite /binds/subst_env/rem/add/upd/look/dom supp_rem !inE. *)
-(*   case: (suppP (ne a) f)=>[v|]-H; rewrite H //. *)
-(*   rewrite andbC; case: suppP=>[v'|]-H'=>/=. *)
-(*   + by case: ifP=>//; rewrite fnd_ins /= fnd_rem /=. *)
-(*   + by rewrite fnd_ins /= fnd_rem /=. *)
-(* Qed. *)
+Proof.
 Admitted.
 
 Lemma completed_means_completed D k T:
@@ -854,144 +501,16 @@ Lemma Weakening G P D1 D2 :
   oft G P D2 -> compatible D1 D2 -> completed D1 -> oft G P (D1 o D2).
 Admitted.
 
-(* Lemma Weakening' G P D1 D2 : *)
-(*   oft G P D2 -> def (D1 \:/ D2) -> completed D1 -> oft G P (D1 \:/ D2). *)
-(* Proof. *)
-(*   induction_oft => Def cD1. *)
-(*   + apply: (t_request (L:= va_dom D1 ++ va_dom D2 ++ L) *)
-(*                       (L':= ch_dom D1 ++ ch_dom D2 ++ L0) (t:=t)) =>// c. *)
-(*     move=>/freechan_cat_c-[/freechan_cat_k-[/freechan_dom-c_D1 _] *)
-(*                           /freechan_cat_k-[_]]. *)
-(*     move=>/freechan_cat_c-[/freechan_cat_k-[/freechan_dom-c_D2 _] *)
-(*                           /freechan_cat_k-[_ free_c]]. *)
-(*     rewrite unionC -add_union unionC; apply: Ih=>//. *)
-(*     rewrite unionC add_union unionC; rewrite def_addb Def /=. *)
-(*     by rewrite dom_union Def /= negb_or c_D1 c_D2. *)
-(*   + apply: (t_accept (L:= va_dom D1 ++ va_dom D2 ++ L) *)
-(*                       (L':= ch_dom D1 ++ ch_dom D2 ++ L0) (t:=t)) =>// c. *)
-(*     move=>/freechan_cat_c-[/freechan_cat_k-[/freechan_dom-c_D1 _] *)
-(*                           /freechan_cat_k-[_]]. *)
-(*     move=>/freechan_cat_c-[/freechan_cat_k-[/freechan_dom-c_D2 _] *)
-(*                           /freechan_cat_k-[_ free_c]]. *)
-(*     rewrite unionC -add_union unionC; apply: Ih=>//. *)
-(*     rewrite unionC add_union unionC; rewrite def_addb Def /=. *)
-(*     by rewrite dom_union Def /= negb_or c_D1 c_D2. *)
-(*   + rewrite unionC add_union unionC. *)
-(*     apply: t_send =>//. *)
-(*     rewrite unionC -add_union unionC. *)
-(*     apply: Ih=>//. *)
-(*     rewrite unionC add_union unionC. *)
-(*     move: Def; rewrite unionC add_union unionC. *)
-(*     by rewrite def_addb def_addb. *)
-(*   + rewrite unionC add_union unionC. *)
-(*     apply: (t_receive (L:=L)) =>// x x_L. *)
-(*     rewrite unionC -add_union unionC. *)
-(*     apply: (Ih x x_L)=>//. *)
-(*     rewrite unionC add_union unionC. *)
-(*     move: Def; rewrite unionC add_union unionC. *)
-(*     by rewrite def_addb def_addb. *)
-(*   + rewrite unionC add_union unionC. *)
-(*     apply: t_select_l. *)
-(*     rewrite unionC -add_union unionC. *)
-(*     apply: Ih=>//. *)
-(*     rewrite unionC add_union unionC. *)
-(*     move: Def; rewrite unionC add_union unionC. *)
-(*     by rewrite def_addb def_addb. *)
-(*   + rewrite unionC add_union unionC. *)
-(*     apply: t_select_r. *)
-(*     rewrite unionC -add_union unionC. *)
-(*     apply: Ih=>//. *)
-(*     rewrite unionC add_union unionC. *)
-(*     move: Def; rewrite unionC add_union unionC. *)
-(*     by rewrite def_addb def_addb. *)
-(*   + rewrite unionC add_union unionC. *)
-(*     apply: t_branch; rewrite unionC -add_union unionC. *)
-(*     - apply: IhP =>//. *)
-(*       rewrite unionC add_union unionC. *)
-(*       move: Def; rewrite unionC add_union unionC. *)
-(*       by rewrite def_addb def_addb. *)
-(*     - apply: IhQ =>//. *)
-(*       rewrite unionC add_union unionC. *)
-(*       move: Def; rewrite unionC add_union unionC. *)
-(*       by rewrite def_addb def_addb. *)
-(*   + move: Def; rewrite unionC !add_union unionC => Def. *)
-(*     apply: t_throw=>//. *)
-(*     rewrite unionC -!add_union unionC. *)
-(*     apply: Ih=>//. *)
-(*     move: Def. *)
-(*     rewrite add_swap =>/def_nested-Def. *)
-(*     rewrite unionC add_union unionC; move: Def. *)
-(*     by rewrite def_addb def_addb. *)
-(*   + rewrite unionC add_union unionC. *)
-(*     apply: (t_catch (L:= va_dom D1 ++ va_dom D2 ++ L) *)
-(*                    (L':= ch_dom D1 ++ ch_dom D2 ++ L0)) =>// c. *)
-(*     move=>/freechan_cat_c-[/freechan_cat_k-[/freechan_dom-c_D1 _] *)
-(*                           /freechan_cat_k-[_]]. *)
-(*     move=>/freechan_cat_c-[/freechan_cat_k-[/freechan_dom-c_D2 _] *)
-(*                           /freechan_cat_k-[_ free_c]]. *)
-(*     rewrite unionC -!add_union unionC; apply: Ih=>//. *)
-(*     rewrite unionC !add_union unionC. *)
-(*     move: Def. *)
-(*     rewrite unionC !add_union unionC=>Def. *)
-(*     rewrite def_addb (def_diff_value T' Def) /=. *)
-(*     move: (oft_def (OftP c free_c)) => /def_add_twice-ck0. *)
-(*     rewrite in_addb. *)
-(*     move: Def; rewrite def_addb =>/andP-[->->]/=. *)
-(*     by rewrite negb_or ck0 /= dom_union negb_and orbC negb_or c_D1 c_D2. *)
-(*   + apply: t_ife=>//. *)
-(*     by apply: IhP. *)
-(*     by apply: IhQ. *)
-(*   + rewrite unionA; apply: t_par=>//. *)
-(*     by apply: IhP=>//; move: Def; rewrite unionA =>/union_def-[]. *)
-(*     by move: Def; rewrite unionA. *)
-(*   + apply: t_inact=>//. *)
-(*     move: CompD cD1; rewrite /completed/binds=>[][_ H1] [_ H2]. *)
-(*     split=>// a. *)
-(*     rewrite dom_union Def/= =>/orP-[|]H. *)
-(*     - by move: Def;  rewrite unionC => Def; rewrite look_union Def H H2. *)
-(*     - by rewrite look_union Def H H1. *)
-(*   + apply: (t_nu_nm (L:=L) (s:=s))=> x x_L. *)
-(*     by apply: Ih. *)
-(*   + apply: (t_nu_ch (L:= ch_dom D1 ++ L) (T:=T)) => x. *)
-(*     rewrite mem_cat negb_or =>/andP-[/notin_chdom_dom-x_D1 x_L]. *)
-(*     move: (oft_def (OftP x x_L)) => Def'. *)
-(*     rewrite unionC -!add_union unionC. *)
-(*     apply: Ih=>//. *)
-(*     rewrite unionC !add_union unionC. *)
-(*     rewrite !def_addb  in_addb !dom_union ke_eqE eq_refl *)
-(*     Def !(negPf (x_D1 _)) /= negb_and negbK. *)
-(*     by move: Def'; rewrite !def_addb !in_addb ke_eqE eq_refl *)
-(*     (proj2 (union_def Def)) /= negb_and negbK. *)
-(*   + by apply: t_nu_ch'; apply: Ih. *)
-(*   + (* move=> Def' CompD; *) apply: t_bang. *)
-(*     move: CompD cD1; rewrite /completed/binds. (* =>[][_ H1] [_ H2]. *) *)
-(*     move=> A B . *)
-(*     split=>// a. *)
-(*     rewrite dom_union Def/= =>/orP-[|]H. *)
-(*     - (* move: Def; *) *)
-(*       by rewrite unionC look_union unionC Def  H ; *)
-(*       move: B ; case ; move=>_ ; apply. *)
-(*     - by rewrite look_union Def H ; *)
-(*       move: A ; case; move=>_ ; apply. *)
-(*     (* - by apply Ih. *) *)
-(*     - by apply OftP. *)
-(* Qed. *)
 
 (*************************************************************)
+
 Definition subst_k_env k k' (D : tp_env) := subst_env k k' D. (* TODO remove the _env *)
 
 Definition subst_entryk k k' (x : tp_env_entry) := if x == k then k' else x.
 
 Ltac simpl_def :=
   do ! match goal with
-       (* | [ |- context[ke _ == ke _] ] => rewrite !ke_eqE *)
        | [ |- context[?k == ?k] ] => rewrite !eq_refl
-       (* | [ |- context[?k == dual_pol ?k] ] => rewrite !dualpol_neqr *)
-       (* | [ |- context[dual_pol ?k == ?k] ] => rewrite !dualpol_neql *)
-       (* | [ |- context[Pos == Neg] ] => rewrite -[Pos == Neg]/(false) *)
-       (* | [ |- context[Neg == Pos] ] => rewrite -[Neg == Pos]/(false) *)
-       (* | [ |- context[Neg == Neg] ] => rewrite -[Neg == Neg]/(true) *)
-       (* | [ |- context[Pos == Pos] ] => rewrite -[Pos == Pos]/(true) *)
        | [ |- context[~~ (_ && _)] ] => rewrite !negb_and
        | [ |- context[~~ (_ || _)] ] => rewrite !negb_or
        | [ |- context[~~ (~~ _)] ] => rewrite !negbK
