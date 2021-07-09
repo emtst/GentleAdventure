@@ -1,0 +1,238 @@
+
+% macros
+
+%% Color management
+
+% \def\NOCOLOR{} % define to remove color from the syntax
+\ifdefined\NOCOLOR
+  \newcommand{\withcolor}[2]{#2} % no color selsected
+\else
+  % sets and restores the color
+  \newcommand{\withcolor}[2]{\colorlet{currbkp}{.}\color{#1}{#2}\color{currbkp}}
+\fi
+
+% % to cancel terms in red instead of black
+% \ifdefined\NOCOLOR
+% \else
+%   \renewcommand{\CancelColor}{\color{red}}
+% \fi
+
+% Macros for BNF grammars
+
+\newcommand{\bnfas}{\mathrel{\Coloneqq}}
+\newcommand{\bnfalt}{\mathrel{\mid}}
+
+% Optional color definitions
+
+% no color
+% \newcommand{\colorch}{black} % colour for channel vars
+% \newcommand{\colorex}{black} % colour for expresion vars
+% \newcommand{\colorse}{black} % colour for session vars
+% \newcommand{\colorlbl}{black} % colour for labels
+% \newcommand{\colorproc}{black} % colour for processes
+% \newcommand{\colorexp}{black} % colour for expressions
+% \newcommand{\colorte}{black} % colour for the types of expressions
+% \newcommand{\colorlp}{black} % colour for local types
+% \newcommand{\colorgt}{black} % colour for global types
+
+% some colors
+\newcommand{\defcl}[1]{\withcolor{black}{#1}} %default colour
+
+% for session types
+\newcommand{\colorch}{blue} % colour for channel vars
+\newcommand{\colorex}{teal} % colour for expresion vars % Tomato was too bright
+\newcommand{\colorproc}{blue} % colour for processes
+\newcommand{\colorexp}{teal} % colour for expressions
+\newcommand{\colorte}{purple} %{DarkOrchid} is undefined % colour for the types of expressions
+\newcommand{\colorst}{Maroon}%{MyDarkOrange} %{NavyBlue} is undefined % colour for session types
+% \newcommand{\colorgt}{violet} % colour for global types
+% \newcommand{\colorcog}{pine} % colour for coinductive global types
+% \newcommand{\colorcol}{dkolive} % colour for coinductive local types
+% \newcommand{\colorpre}{coffee} %colour for prefixes
+
+% for the lambda calculus
+\newcommand{\colorlctp}{NavyBlue} % colour for the types of terms
+\newcommand{\colorlctm}{FireBrick} %for terms
+\newcommand{\colorlcvar}{DarkOrchid} % purple for bound variables
+\newcommand{\colorrules}{black} % color for rule names
+
+% macros
+%% Macros for kinds of vars
+% these are to control the rendering of the different kinds of variables
+\newcommand{\vch}[1]{\withcolor{\colorch}{#1}} % variables for channels
+\newcommand{\vex}[1]{\withcolor{\colorex}{#1}} % variables for expressions
+
+% square brackets in rule names
+\let\DefTirNameOld\DefTirName
+\renewcommand{\DefTirName}[1]{\withcolor\colorrules{\DefTirNameOld{\footnotesize[{#1}]}}}
+
+
+\newcommand{\dexp}[1]{\withcolor{\colorexp}{#1}} % just to define possible use o
+\newcommand{\dte}[1]{\withcolor{\colorte}{#1}} % just to define possible use of colours
+
+\newcommand{\dproc}[1]{\withcolor{\colorproc}{#1}} % just to define possible use of colours
+\newcommand{\dst}[1]{\withcolor{\colorst}{#1}} % just to define possible use of colours
+
+%% Macros for processes
+
+\newcommand{\bvar}[1]{\ensuremath{\dexp{#1}}}
+\newcommand{\fvar}[1]{\ensuremath{\dexp{#1}}}
+\newcommand{\lam}[1]{\ensuremath{\dexp{\lambda\mathrel{.}{#1}}}}
+\newcommand{\app}[2]{\ensuremath{\dexp{#1}\,\dexp{#2}}}
+\newcommand{\base}[0]{\ensuremath{\dte{\texttt{base}}}}
+\newcommand{\arr}[2]{\ensuremath{\dte{{#1}\to{#2}}}}
+\newcommand{\oft}{\ensuremath{\mathrel{:}}} % is of type
+\newcommand{\lclosed}[1]{\ensuremath{\texttt{lc}({#1})}}
+
+\newcommand{\loft}[3]{\ensuremath{\vex{#1}\mathrel{\vdash}{\dexp{#2}}\mathrel{:}{\dte{#3}}}}
+
+\newcommand{\openop}[2]{\ensuremath{{#1}^{#2}}} % term name
+\newcommand{\closeop}[2]{^{\backslash #2}\ensuremath{{#1}}} % term name
+
+\newcommand{\ett}{\ensuremath{\dexp{\texttt{tt}}}}
+\newcommand{\eff}{\ensuremath{\dexp{\texttt{ff}}}}
+\newcommand{\eone}{\ensuremath{\dexp{()}}}
+
+\newcommand{\tbool}{\ensuremath{\dte{bool}}}
+\newcommand{\tunit}{\ensuremath{\dte{unit}}}
+
+\newcommand{\psend}[3]{\ensuremath{\dproc{{#1}![\dexp{#2}].{#3}}}}
+\newcommand{\precv}[3]{\ensuremath{\dproc{{#1}?(\dexp{#2}).{#3}}}}
+\newcommand{\pif}[3]{\ensuremath{\dproc{
+      \texttt{if}\,\dexp{#1}\mathrel{\texttt{else}}{#2}\mathrel{\texttt{else}}{#3}}}}
+\newcommand{\ppar}[2]{\ensuremath{{\dproc{{#1}\mathrel{|}{#2}}}}}
+\newcommand{\pnu}[1]{\ensuremath{{\dproc{\nu.{#1}}}}}
+\newcommand{\pbang}[1]{\ensuremath{{\dproc{!\,{#1}}}}}
+\newcommand{\pinact}[0]{\ensuremath{\dproc{\texttt{inact}}}}
+
+\newcommand{\tin}[2]{\ensuremath\dst{?[\dte{#1}].{#2}}}
+\newcommand{\tout}[2]{\ensuremath\dst{![\dte{#1}].{#2}}}
+\newcommand{\tend}[0]{\ensuremath\dst{\texttt{end}}}
+\newcommand{\tbot}[0]{\ensuremath\dst{\bot}}
+
+\newcommand{\pred}[2]{\ensuremath{\dproc{#1}\mathrel{\to}\dproc{#2}}} % process reduction
+
+\newcommand{\subst}[2]{\ensuremath{[{#1}/{#2}]}}
+
+\newcommand{\eoft}[3]{\ensuremath{\vex{#1}\mathrel{\vdash_e} \dexp{#2}\oft\dte{#3}}}
+
+\newcommand{\poft}[3]{\ensuremath{\dexp{#1}\vdash\dproc{#2}\oft\dproc{#3}}}
+\newcommand{\poftG}[2]{\poft{\Gamma}{#1}{#2}}
+
+\newcommand{\completed}[1]{\ensuremath{\texttt{completed}(\vch{#1})}}
+
+\newcommand{\pcompose}[2]{\ensuremath{\vch{#1}\mathrel{\circ}\vch{#2}}}
+\newcommand{\pcompatible}[2]{\ensuremath{\vch{#1}\mathrel{\asymp}\vch{#2}}}
+
+
+
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+%syntax
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{rrcl}
+    \text{Terms} & \dexp M, \dexp N & \bnfas & \bvar n \bnfalt \fvar x \bnfalt \lam M \bnfalt \app M N\\
+    \text{Types} & \dte S, \dte T & \bnfas & \base \bnfalt \arr S T\\
+  \end{array}
+\end{displaymath}
+
+
+% LN
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{cc}
+    \openop {\dexp M} {\vex x} \equiv \{\vex 0 \rightarrow \vex x\} M & \closeop {\dexp M} {\vex x} \equiv \{\vex 0 \leftarrow \vex x\} \dexp M \\
+    \multicolumn{2}{c}{\lclosed {\dexp M}}\\
+  \end{array}
+\end{displaymath}
+
+% typing
+
+\begin{mathpar}
+  \inferrule{\vex{\Gamma}(\fvar x) = \dte T}{\loft\Gamma{\fvar x}{T}} \and
+  \inferrule{\loft\Gamma M {\arr S T} \\ \loft\Gamma N S}
+  {\loft\Gamma{\app M N} T} \and
+  \inferrule{\forall \vex x \notin L \\ \loft{\Gamma, x\oft S}{\openop M x} T}
+  {\loft\Gamma{\lam M}{\arr S T}}
+\end{mathpar}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{The Simply Typed $\lambda$-calculus -- STLC}
+
+\end{frame}
