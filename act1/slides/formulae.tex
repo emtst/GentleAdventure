@@ -44,7 +44,7 @@
     \text{Expressions} & \dexp{e} & \bnfas & \ett \bnfalt \eff \bnfalt \eone \bnfalt x\\
     \text{Sorts} & \dte{S} & \mathrel{::=} & \tbool \bnfalt \tunit \\
 
-    \text{Processes} & \dproc{P}, \dproc{Q} & \bnfas & \psend k e P \bnfalt \precv k x P \bnfalt \ppar P Q\\
+    \text{Processes} & \dproc{P}, \dproc{Q} & \bnfas & \psend k e P \bnfalt \precv k P \bnfalt \ppar P Q\\
     & & & \bnfalt \pif e P Q \\
     & & & \bnfalt \pnu P \bnfalt \pbang P \bnfalt \pinact\\
     \text{Types} & \dst{T} & \bnfas & \tin S T \bnfalt \tout S T \bnfalt \tend \bnfalt \tbot\\
@@ -73,7 +73,7 @@
 \begin{displaymath}
   \arraycolsep=1.4pt\def\arraystretch{1.3}
   \begin{array}{rc}
-    \DefTirName{r-com} & \pred {\ppar {\psend k e P}{\precv k x Q}} {\ppar P {Q\subst e x}}\\
+    \DefTirName{r-com} & \pred {\ppar {\psend k e P}{\precv k Q}} {\ppar P {\openop Q e}}\\
 
     \DefTirName{r-cong} & \dproc{P}\equiv\dproc{P'} \text{and}\ \pred {P'} {Q'}
                           \text{and}\ \dproc{Q'}\equiv\dproc{Q}
@@ -92,7 +92,7 @@
 \begin{displaymath}
   \arraycolsep=1.4pt\def\arraystretch{1.3}
   \begin{array}{rc}
-    \DefTirName{r-com} & \pred {\ppar {\psend k e P}{\precv k x Q}} {\ppar P {Q\subst e x}}\\
+    \DefTirName{r-com} & \pred {\ppar {\psend k e P}{\precv k Q}} {\ppar P {\openop Q e}}\\
 
     \DefTirName{r-cong} & \dproc{P}\equiv\dproc{P'} \text{and}\ \pred {P'} {Q'}
                           \text{and}\ \dproc{Q'}\equiv\dproc{Q}
@@ -116,32 +116,9 @@
   \inferrule[t-send]{\eoft\Gamma e S \\ \poftG P {\Delta \cdot k \oft \dst T }}
   {\poftG {\psend k e P} {\Delta\cdot \vch k \oft \tout S T}} \and
 
-  \inferrule[t-receive]{\poft {\Gamma\cdot \vex{x}\oft\dte{S}} P {\Delta \cdot k \oft \dst T }}
-  {\poftG {\precv k x P} {\Delta\cdot \vch k \oft \tin S T}} \and
-
-  \inferrule[t-ife]{\eoft\Gamma e \tbool \\ \poftG P \Delta \\ \poftG Q \Delta}
-  {\poftG {\pif e P Q} \Delta} \and
-
-  \inferrule[t-par]
-  {\poftG P \Delta \\ \poftG P {\Delta'} \\ \pcompatible\Delta{\Delta'}}
-  {\poftG {\ppar P Q} {\pcompose \Delta {\Delta'}}} \and
-
-  \inferrule[t-inact]{\completed \Delta}{\poftG \pinact \Delta} \and
-
-  \inferrule[t-nu]{\poftG P {\Delta\cdot ? \oft \tbot}}{\poftG {\pnu P} \Delta} \and
-
-  \inferrule[t-nu']{\poftG P \Delta}{\poftG {\pnu P}  \Delta} \and
-
-  \inferrule[t-bang]{\completed D \\ \poftG P \cdot}{\poftG {\pbang P} \Delta}
-\end{mathpar}
-
-
-\begin{mathpar}
-  \inferrule[t-send]{\eoft\Gamma e S \\ \poftG P {\Delta \cdot k \oft \dst T }}
-  {\poftG {\psend k e P} {\Delta\cdot \vch k \oft \tout S T}} \and
-
-  \inferrule[t-receive]{\poft {\Gamma\cdot \vex{x}\oft\dte{S}} P {\Delta \cdot k \oft \dst T }}
-  {\poftG {\precv k x P} {\Delta\cdot \vch k \oft \tin S T}} \and
+  \inferrule[t-receive]{\forall \vex x\notin L\\
+    \poft{\Gamma\cdot \vex{x}\oft\dte{S}} P {\Delta \cdot k \oft \dst T }}
+  {\poftG {\precv k P} {\Delta\cdot \vch k \oft \tin S T}} \and
 
   \inferrule[t-ife]{\eoft\Gamma e \tbool \\ \poftG P \Delta \\ \poftG Q \Delta}
   {\poftG {\pif e P Q} \Delta} \and
