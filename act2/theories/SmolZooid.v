@@ -232,11 +232,14 @@ Fixpoint run_IO_prefix e :=
   | _ => e
   end.
 
-Definition p_unroll e :=
-  match run_IO_prefix e with
-  | Rec e' => run_IO_prefix (p_subst 0 e e')
+Definition p_unroll_rec e :=
+  match e with
+  | Rec e' => p_subst 0 e e'
   | e' => e'
   end.
+
+Definition p_unroll e :=
+  run_IO_prefix (p_unroll_rec (run_IO_prefix e)).
 (** end details **)
 
 (** Function [step : proc -> rt_event -> option proc] takes a process [e :
@@ -284,7 +287,7 @@ Proof.
 Qed.
 (* end details *)
 
-(** [proc_acceots] encodes the property of a process accepting a trace, and it
+(** [proc_accepts] encodes the property of a process accepting a trace, and it
  is the greatest fixpoint of [proc_lts_]. **)
 
 Definition proc_accepts p TR P := paco2 (proc_lts_ p) bot2 TR P.
@@ -357,9 +360,12 @@ _by construction.
 
 Definition SZooid L := { p | of_lty p L}.
 
-Definition z_Inact                  : SZooid l_end      := exist _ _ lt_Inact.
-Definition z_Jump  X                : SZooid (l_jump X) := exist _ _ (lt_Jump X).
-Definition z_Rec   L (k : SZooid L) : SZooid (l_rec L)  := exist _ _ (lt_Rec (proj2_sig k)).
+Definition z_Inact : SZooid l_end
+  := exist _ _ lt_Inact.
+Definition z_Jump  X : SZooid (l_jump X)
+  := exist _ _ (lt_Jump X).
+Definition z_Rec   L (k : SZooid L) : SZooid (l_rec L)
+  := exist _ _ (lt_Rec (proj2_sig k)).
 
 Definition z_Send  p T x L (k : SZooid L) : SZooid (l_send p T L)
   := exist _ _ (lt_Send p x (proj2_sig k)).
@@ -400,27 +406,273 @@ Qed.
 the allowed traces. We build a semantics for local types, and prove that, given
 [p : SZooid L], if [p] transitions to [p'] with some event [E], then [L] also
 transitions to [L'] with the "same" event. But, since processes contain payloads
-and local types do not, we must first rease these payloads from the trace
+and local types do not, we must first erase these payloads from the trace
 events. **)
 
 Definition lt_event := event (fun=>unit).
+Definition lt_trace := trace lt_event.
 
-(* begin details: [erase : rt_event -> lt_event] *)
-Definition erase (e : rt_event) : lt_event :=
+(* begin details: [ev_erase : rt_event -> lt_event] and [erase : rt_trace ->
+lt_trace] *)
+Definition ev_erase (e : rt_event) : lt_event :=
   {| action_type := action_type e;
      from := from e;
      to := to e;
      payload_type := payload_type e;
      payload := tt
   |}.
+Definition erase := trace_map ev_erase.
 (* end details *)
 
-(** We want to make sure that types indeed characterise the traces according to
-the allowed traces. We build a semantics for local types, and prove that, given
-[p : SZooid L], if [p] transitions to [p'] with some event [E], then [L] also
-transitions to [L'] with the "same" event. But, since processes contain payloads
-and local types do not, we must first rease these payloads from the trace
-events. **)
+(** Next, we need to define the semantics of local types. We do this in an
+analogous way to the semantics of processes. **)
 
+(* begin hide *)
+Fixpoint l_shift n d e :=
+  match e with
+  | l_end => l_end
+  | l_jump X => if X >= d then l_jump (n + X) else e
+  | l_rec e => l_rec (l_shift n d.+1 e)
+  | l_recv p T k => l_recv p T (l_shift n d k)
+  | l_send p T k => l_send p T (l_shift n d k)
+  end.
+
+Fixpoint l_subst d e' e :=
+  match e with
+  | l_end => l_end
+  | l_rec e => l_rec (l_subst d.+1 e' e)
+  | l_jump X => if X == d then l_shift d 0 e' else e
+  | l_send p T k => l_send p T (l_subst d e' k)
+  | l_recv p T k => l_recv p T (l_subst d e' k)
+  end.
+(* end hide *)
+
+(* begin details: [lty_accepts : lty -> lt_trace -> Prop] *)
+Definition l_unroll L :=
+  match L with
+  | l_rec L' => l_subst 0 L L'
+  | L' => L'
+  end.
+Definition lstep' e (E : lt_event) :=
+  match e with
+  | l_send p T k =>
+    if (action_type E == a_send) &&
+       (to E == p) &&
+       (payload_type E == T)
+    then Some k else None
+  | l_recv p T k =>
+    if (action_type E == a_recv) &&
+       (to E == p) &&
+       (payload_type E == T)
+    then Some k else None
+  | _ => None
+  end.
+
+Definition lstep e := lstep' (l_unroll e).
+
+Definition L_trace := lt_trace -> lty -> Prop.
+Inductive lty_lts_ p (G : L_trace) : L_trace :=
+  | pl_end :
+      @lty_lts_ p G tr_end l_end
+  | pl_next E TRC e e' :
+      from E == p ->
+      lstep e E = Some e' ->
+      G TRC e' ->
+      @lty_lts_ p G (tr_next E TRC) e.
+Arguments pl_end {p G}.
+Arguments pl_next [p G E TRC e e'].
+
+Lemma lty_lts_monotone p : monotone2 (lty_lts_ p).
+Proof. 
+  move=> TRC e R R' [|E TRC' e' e'' SUBJ STEP H] F; first by apply: pl_end.
+  by apply/(pl_next SUBJ STEP)/F.
+Qed.
+
+Definition lty_accepts p TR P := paco2 (lty_lts_ p) bot2 TR P.
+(* end details *)
+
+(** Using these definitions, we can make the final statement:**)
+
+(* begin hide *)
+
+Lemma runIO_preserves_type e L :
+    of_lty e L -> of_lty (run_IO_prefix e) L.
+Proof.
+  elim=>/=.
+  - by constructor.
+  - by move=>X; constructor.
+  - by move=> {}e {}L H _; constructor.
+  - by move=> p T k {}L pl H _; constructor.
+  - by move=> p T k {}L H _; constructor.
+  - by move=> T k {}L _ IH; apply/IH.
+  - by move=> T k {}L _ _ IH; apply/IH.
+Qed.
+
+Lemma runIO_not_Read e T k : run_IO_prefix e <> @ReadIO T k.
+Proof. by elim: e =>/=. Qed.
+
+Lemma runIO_not_Write e T x k : run_IO_prefix e <> @WriteIO T x k.
+Proof. by elim: e =>/=. Qed.
+
+Lemma shift_preserves_type n d P L :
+  of_lty P L ->
+  of_lty (p_shift d n P) (l_shift d n L).
+Proof.
+  move=> H; elim: H n=>/=; try by constructor.
+  move=> X n; case: ifP; by constructor.
+Qed.
+
+Lemma subst_preserves_type e e' L L' n :
+    of_lty e L -> of_lty e' L' -> of_lty (p_subst n e' e) (l_subst n L' L).
+Proof.
+  move=> H; elim: H n=>/=; try by constructor.
+  - move=>X n; case: ifP=>/=; try by constructor.
+    by move=> _ /(shift_preserves_type 0 n).
+  - move=> k L0 _ IH m H; constructor.
+    by apply/IH.
+  - move=> p T k L0 pl _ IH n H; constructor.
+    by apply: IH.
+  - move=> p T k L0 _ IH n H; constructor => pl.
+    by apply: IH.
+  - move=> T k L0 _ IH n H; constructor => pl.
+    by apply: IH.
+  - move=> T k L0 pl _ IH n H; constructor.
+    by apply: IH.
+Qed.
+
+Lemma unroll_preserves_type e L :
+    of_lty e L -> of_lty (p_unroll e) (l_unroll L).
+Proof.
+  elim=>/=; try by constructor.
+  - move=> {}e {}L H _.
+    rewrite /p_unroll /=.
+    apply/runIO_preserves_type/subst_preserves_type=>//.
+    by constructor.
+  - move=> T k L0 _ IH.
+    rewrite /p_unroll/=-/(p_unroll (k _)).
+    by apply: IH.
+  - move=> T k L0 pl.
+    by rewrite /p_unroll/=-/(p_unroll k).
+Qed. 
+(* end hide *)
+
+Theorem preservation (e : proc) (L : lty) (H : of_lty e L) (E : rt_event) :
+  forall e', step e E = Some e' ->
+             exists L', lstep L (ev_erase E) = Some L' /\ of_lty e' L'.
+Proof.
+  rewrite /step/lstep.
+  move: (unroll_preserves_type _ _ H)=>{}H e'.
+  move: (p_unroll e) (l_unroll L) H =>{}e {}L; case=>//=.
+  { (* Case Send *)
+    move=> p T k L0 pl OfLty.
+    case: ifP=>//.
+    move=> /andP-[/andP-[->->] /eq_payload_eq->] [<-]/={e'}.
+    by exists L0.
+  }
+  { (* Case Recv *)
+    move=> p T k L0 OfLty.
+    case: ifP=>// _.
+    case EQ: (check_type (payload E) T)=>[x|//] [<-]{e'}.
+    exists L0; split=>//.
+    by rewrite (check_type_eq (payload_type E) (payload E)) // EQ.
+  }
+Qed.
+
+(** A straightforward corollary is trace soundness **)
+Corollary trace_soundness e L p :
+  forall trace, proc_accepts p trace e -> lty_accepts p (erase trace) L.
+Admitted.
 
 (** ** Extraction **)
+
+(** The main goal of defining a simple process language, with a mixture of deep
+and shallow embedded binders is to simplify *certified code extraction*. To
+extract [proc], we need an interpretation of its constructs. We do this in a way
+that closely resembles that of _effect handlers_. **)
+
+(** First, we define an ambient monad to run processes **)
+Module Type ProcessMonad.
+  Parameter t : Type -> Type.
+
+  Parameter run : forall {A}, t A -> A.
+  Parameter bind : forall {T1 T2}, t T1 -> (T1 -> t T2) -> t T2.
+  Parameter pure : forall {T1}, T1 -> t T1.
+
+  Parameter send : forall T, participant -> interp_type T -> t unit.
+  Parameter recv : forall T, participant -> t (interp_type T).
+
+  Parameter loop : forall {T1}, nat -> (unit -> t T1) -> t T1.
+  Parameter set_current: nat -> t unit.
+End ProcessMonad.
+
+(** We then define a module that describes the implementation of
+ processes, and a higher-order module that is used to control
+ OCaml code extraction, given a [ProcessMonad]. **)
+Module Type PROCESS.
+  Declare Module PM : ProcessMonad.
+  Parameter proc : PM.t unit.
+End PROCESS.
+
+Module Type PROCESS_FUNCTOR (MP: ProcessMonad) <: PROCESS.
+  Module PM := MP.
+  Parameter proc : PM.t unit.
+End PROCESS_FUNCTOR.
+
+(** The process extraction module takes a [MP : ProcessMonad], and defines the
+ [extract_proc] function, that recursivey traverses [proc], and produces code in
+ the [MP.t] monad. This is the code that will be extracted. **)
+Module ProcExtraction (MP : ProcessMonad).
+  Fixpoint extract_proc (d : nat) (p : proc) : MP.t unit :=
+    match p with
+    | Inact => MP.pure tt
+    | Jump v       => MP.set_current (d - v.+1)
+    | Rec p        => MP.loop d (fun _ => extract_proc d.+1 p)
+
+    | Send p T x k => MP.bind (MP.send T p x) (fun=> extract_proc d k)
+    | Recv p T   k => MP.bind (MP.recv T p) (fun x=> extract_proc d (k x))
+
+    | ReadIO T k => MP.bind (MP.pure (@readIO T tt))
+                            (fun x=> extract_proc d (k x))
+    | WriteIO T x k => MP.bind (MP.pure (@writeIO T x))
+                            (fun=> extract_proc d k)
+    end.
+End ProcExtraction.
+
+(** *** Extraction **)
+Require Import Extraction.
+Require Import ExtrOcamlBasic.
+Require Import ExtrOcamlNatInt.
+
+(** We will force the evaluation of [extract_proc], to generate more readable
+ OCaml code. Due to this, any function that is used in local computations needs
+ to be declared [Opaque], to make sure it is not unfolded. **)
+Opaque eqn.
+Opaque addn.
+Opaque muln.
+Opaque maxn.
+
+About Alice_by_construction.
+
+Let alice := projT1 (projT2 (Alice_by_construction)).
+Module  ALICE (MP : ProcessMonad) : PROCESS_FUNCTOR(MP).
+  Module PE := ProcExtraction(MP).
+  Module PM := MP.
+  Definition proc := Eval compute in PE.extract_proc 0 alice.
+End ALICE.
+
+Extraction ALICE.
+
+(** This will extract the following OCaml code:
+[module ALICE =
+ functor (MP:ProcessMonad) ->
+ struct
+  module PM = MP
+
+  (** val proc : unit MP.t **)
+
+  let proc =
+    MP.loop 0 (fun _ ->
+      MP.bind (MP.pure (readIO Nat ())) (fun x ->
+        MP.bind (MP.send Nat (Pervasives.succ 0) x) (fun _ -> MP.set_current 0)))
+ end]
+**)
