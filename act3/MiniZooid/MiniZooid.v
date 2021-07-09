@@ -3345,20 +3345,31 @@ Section TraceEquiv.
     Projection (ig_msg false F T (t,G)) P ->
     Projection (ig_msg true F T (t,G)) (run_step (mk_act a_send F T t) P).
   Proof.
-    move=>PRJ.
-    move: (IProj_send1_inv (PRJ.1 F))=>[FT [[tF LF] [llF //=[ttF IPRJF]] ]].
-    move: (IProj_recv_inv (PRJ.1 T))=>[_ [[tT LT] [llT //=[ttT IPRJT]] ]].
+
+    (*we obtain the local and queue environments*)
+    move: P=>[E Q]; move=>[/=PRJ QPRJ].
+
+    (*we apply inversion rules of coinductive projection for F and T*)
+    move: (IProj_send1_inv (PRJ F))=>[FT [[tF LF] [llF //=[ttF IPRJF]] ]].
+    move: (IProj_recv_inv (PRJ T))=>[_ [[tT LT] [llT //=[ttT IPRJT]] ]].
+
+    (*we rewrite the auxiliary function and simplify*)
     rewrite /run_step/= llF ttF !eq_refl//=.
-    split.
+    split=>/=.
+
+    (*we do case analysis on participants for E and we solve each one,
+      by applying constructors*)
     - move=>p; case: (boolP (p == F))=>[/eqP->{p}|];
       [|case: (boolP (p == T))=>[/eqP->{p} _|pT pF]].
       + by apply: (iprj_send2 FT FT); rewrite look_same.
       + rewrite look_comm //= llT.
         by apply: (iprj_recv); [rewrite eq_sym|rewrite -ttF|].
       + rewrite look_comm //=; [|by rewrite eq_sym].
-        move: (IProj_cnt_inv (PRJ.1 p) pF pT)=>[_ /=] .
-        by apply /(@iprj_send2 _ _ _ (tF,G)).
-    - move: (qProject_false_inv PRJ.2)=>[PFT QPRJ].
+        move: (IProj_cnt_inv (PRJ p) pF pT)=>[_ /=] .
+          by apply /(@iprj_send2 _ _ _ (tF,G)).
+
+    (*we solve the goal for queue projection: inversion and constructor application*)
+    - move: (qProject_false_inv QPRJ)=>[PFT {}QPRJ].
       apply: (qprj_some _ QPRJ)=>//=.
       rewrite /deq/enq PFT fnd_set eq_refl/= remf1_set eq_refl remf1_id //.
       by rewrite -fndSome PFT.
@@ -3807,7 +3818,8 @@ Section TraceEquiv.
       by apply: (Proj_recv_undo FT llT DQ PRJ0).
     - by move=>/Projection_unr; apply IH.
   Qed.
-
+  (*here*)
+  (*
   Definition payload A :=
     let: (mk_act _ _ _ l Ty) := A in (l, Ty).
 
@@ -4144,10 +4156,10 @@ Section TraceEquiv.
         apply/paco2_fold; apply/eg_trans; first by apply/STEP.
         by right; apply/(CIH _ _ _ PRJ' TRACE).
   Qed.
-
+*)
 End TraceEquiv.
 
-Section InductiveTrace.
+(*Section InductiveTrace.
   Definition gty_accepts TRACE g := g_lts TRACE (ig_end (g_expand g)).
   Definition lty_accepts TRACE e := l_lts TRACE (expand_env e, [fmap]%fmap).
 
@@ -4171,4 +4183,4 @@ Section InductiveTrace.
 
   Print Assumptions IndTraceEquiv.
 
-End InductiveTrace.
+End InductiveTrace.*)

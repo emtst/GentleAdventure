@@ -252,11 +252,12 @@
 
 
 
-\begin{frame}{Global and Local Types}
-
+\begin{frame}{Formalisation of Global and Local Types}
+\begin{small}
 \begin{columns}
 \begin{column}{0.5\textwidth}
 
+  Inductively defined datatypes
   \[
   \begin{array}{ll}
     %\tS & ::= \tnat \SEP \tint \SEP\tbool \SEP \tplus \tS \tS \SEP \tpair \tS \tS \\
@@ -274,62 +275,8 @@
 
 
 \end{column}
-\begin{column}{0.5\textwidth}  %%<--- here
-  \[
-  \G = \grec \gX {\msg \p\q {(\tS).} \gX}
-  \]
-  \vspace{8mm}
-  \[
-  \begin{array}{l}
-    \proj \G p = \lrec \lX {\lsnd q {(\tS).} \lX}\\
-    \proj \G q = \lrec \lX {\lrcv p {(\tS).} \lX}
-  \end{array}
-  \]
-\end{column}
-\end{columns}
-\end{frame}
-
-
-\begin{frame}{Coinductive Global and Local ``Trees''}
-  \begin{columns}
-\begin{column}{0.4\textwidth}
-  \[
-  \coG ::=\; %
-  \cogend \;\SEP\;%
-  \comsgn \p\q  {\dcog{(\tS).}} {\coG}
-  \]
-  \vspace{-4mm}
-  \[
-    \begin{array}{ll}
-    \preG  ::= & \pgend\ \coG \;\\
-    &\SEP\;\pmsgn \p\q {\dpre{(\tS)}} {\preG}\\
-    &\SEP\; \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
-    \end{array}
-  \]
-\vspace{4mm}
-
-    \[
-    \begin{array}{ll}
-      \colT ::= & \colend\;\\
-      &\SEP\;\colsnd \p {\dcol{(\tS).}} {\colT}\\
-      &\SEP\;\colrcv \q {\dcol{(\tS).}} {\colT}
-    \end{array}
-  \]
-\end{column}
-\begin{column}{0.6\textwidth}  %%<--- here
-  Inductive prefixes for global ``trees'' $\preG$ are formally introduced for asynchronicity!
-
-    \[
-  \pmsgn \p\q {\dpre{(\tS)}} {\preG} \step \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
-  \]
-\end{column}
-\end{columns}
-\end{frame}
-
-
-\begin{frame}{Coinductive Global and Local ``Trees''}
-  \begin{columns}
 \begin{column}{0.5\textwidth}
+  Coinductively defined datatypes
   \[
   \begin{array}{ll}
     \coG ::=\;&\cogend \;\\
@@ -348,6 +295,34 @@
     \end{array}
   \]
 \end{column}
+
+
+
+
+\end{columns}
+\end{small}
+\end{frame}
+
+
+\begin{frame}{Formalisation of Global and Local Types}
+\begin{small}
+
+  \begin{columns}
+
+  \begin{column}{0.5\textwidth}  %%<--- here
+  \[
+  \G = \grec \gX {\msg \p\q {(\tS).} \gX}
+  \]
+  \vspace{8mm}
+  \[
+  \begin{array}{l}
+    \proj \G p = \lrec \lX {\lsnd q {(\tS).} \lX}\\
+    \proj \G q = \lrec \lX {\lrcv p {(\tS).} \lX}
+  \end{array}
+  \]
+\end{column}
+
+
 \begin{column}{0.5\textwidth}  %%<--- here
   \[
   \coG = \comsgn \p \q {\dcog{(\tS).}} {\coG}
@@ -361,9 +336,52 @@
   \end{array}
   \]
 
+
 \end{column}
 \end{columns}
+
+  \end{small}
 \end{frame}
+
+
+%% \begin{frame}{Coinductive Global and Local ``Trees''}
+%%   \begin{columns}
+%% \begin{column}{0.5\textwidth}
+%%   \[
+%%   \coG ::=\; %
+%%   \cogend \;\SEP\;%
+%%   \comsgn \p\q  {\dcog{(\tS).}} {\coG}
+%%   \]
+%%   \vspace{-4mm}
+%%   \[
+%%     \begin{array}{ll}
+%%     \preG  ::= & \pgend\ \coG \;\\
+%%     &\SEP\;\pmsgn \p\q {\dpre{(\tS)}} {\preG}\\
+%%     &\SEP\; \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
+%%     \end{array}
+%%   \]
+%% \vspace{4mm}
+
+%%     \[
+%%     \begin{array}{ll}
+%%       \colT ::= & \colend\;\\
+%%       &\SEP\;\colsnd \p {\dcol{(\tS).}} {\colT}\\
+%%       &\SEP\;\colrcv \q {\dcol{(\tS).}} {\colT}
+%%     \end{array}
+%%   \]
+%% \end{column}
+%% \begin{column}{0.6\textwidth}  %%<--- here
+%%   Inductive prefixes for global ``trees'' $\preG$ are formally introduced for asynchronicity!
+
+%%     \[
+%%   \pmsgn \p\q {\dpre{(\tS)}} {\preG} \step \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
+%%   \]
+%% \end{column}
+%% \end{columns}
+%% \end{frame}
+
+
+
 
 \begin{frame}{Abandoning Inductive Datatypes}
  \begin{small}
@@ -371,7 +389,7 @@
     Given $\G$, $\lT$, $\coG$ and $\colT$, such that $(a)$ $\projt{\G} \pr = \lT\ $, $(b)$ $\gunroll \G \coG$, and $(c)$ $\lunroll \lT \colT$,
 then $\coproj \pr \coG \colT$.
   \end{theorem}
-\end{small}
+
 
   \begin{figure}
 \begin{tikzpicture}[commutative diagrams/every diagram]
@@ -402,7 +420,7 @@ then $\coproj \pr \coG \colT$.
         \begin{proof}
           By coinduction. :)
         \end{proof}
-
+\end{small}
 \end{frame}
 
 \begin{frame}{Type Semantics for Zooid}
@@ -467,7 +485,7 @@ $\q$ receives:
 \& \&
 \coG\arrow[dd, "\upharpoonright_{\q}"] \\
 \& \& \& \&\\
-\colrcv \p \dcol{ (S).} \colT\dcol{'} \arrow[rrrr, "!\q\p\tS"]\& \& \& \&\colT\dcol{'}
+\colrcv \p \dcol{ (S).} \colT\dcol{'} \arrow[rrrr, "?\q\p\tS"]\& \& \& \&\colT\dcol{'}
 \end{tikzcd}
 \]
 %}
@@ -483,35 +501,88 @@ $\q$ receives:
   {\bf Queues and Queue Environments.} $Q$, buffers for asynchronous communication.
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\colsnd \q \dcol{(S).} \colT \arrow[rr, "\text{step}"]\& \&\colT\&\&\\
-Q(\p,\q)=\epsilon\arrow[rr,"\text{enqueue}"] \& \& Q(\p,\q)=[S]\arrow[rr,"\text{dequeue}"] \& \& Q(\p,\q)=\epsilon\\
+\colsnd \q \dcol{(S).} \colT \arrow[rr, "\text{step}"]\& \&\colT\&\&\\[-5mm]
+Q(\p,\q)=[]\arrow[rr,"\text{enqueue}"] \& \& Q(\p,\q)=[S]\arrow[rr,"\text{dequeue}"] \& \& Q(\p,\q)=[]\\[-5mm]
 \& \& \colrcv \p  \dcol{(S).} \colT{\color{dkolive}'}  \arrow[rr, "\text{step}"]\& \& \colT{\color{dkolive}'}
 \end{tikzcd}
 \]
-
+\visible<2->{
+\begin{block}{}
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\&\coG\arrow[dl,"{\pmb\upharpoonright}^{\sf c}"]\arrow[dr,"{\pmb\upharpoonright}^{\sf q}"']\&\&\&\coG\arrow[d, "{\pmb\upharpoonright}\!{\pmb\upharpoonright}"]\\
+\dcol{E}\& \&Q\&\&(\dcol{E},Q)
+\end{tikzcd}
+\]
+\end{block}
+}
 \end{small}
 \end{frame}
 
 
 \begin{frame}{Theorems}
-results
+\begin{small}
+\begin{Theorem}[Step Soundness]
+   If $\coG \stepa{a} \dcog{\coG'}$ and $\coG \osproj (\dcol{E},Q)$,
+   there exist $\dcol{E'}$ and $Q'$ such that
+   $\dcog{\coG'} \osproj (\dcol{E'},Q')$ and
+   $(\dcol{E},Q) \stepa{a} (\dcol{E'},Q')$.
+ \end{Theorem}
+\vspace{3mm}
+\begin{Theorem}[Step Completeness]
+  If $(\dcol{E},Q) \stepa{a} (\dcol{E'},Q')$ and
+  $\coG \osproj (\dcol{E},Q)$, there exist $\dcog{\coG'}$ such that
+  $\dcog{\coG'} \osproj (\dcol{E'},Q')$ and
+  $\coG \stepa{a} \dcog{\coG'}$.
+\end{Theorem}
+\vspace{3mm}
+\begin{theorem}[Trace equivalence]
+  If $\coG\osproj(\dcol{E},Q)$, then
+$\ \glts t \coG\ $
+if and only if $\ \llts t (\dcol{E},Q)\ $.
+\end{theorem}
 
+
+\end{small}
 \end{frame}
 
-\begin{frame}{Flavourful Lemma(s)}
+\begin{frame}{Lemma, to give the flavour}
 
 $\longrightarrow$ Coq!
 
 \end{frame}
 
-\begin{frame}{Conclusion}
+\begin{frame}{Our Adventurer Rests and Meditates}
 
-  Please, read the paper.
+  \begin{small}
+
+    \begin{itemize}
+    \item Formal proofs are not easy! (But useful and fun!)
+    \item Proof design is the key.
+    \item Proof techniques are to be taken seriously: (co)induction, functions VS relations...
+    \end{itemize}
+
+  \end{small}
 
 
-Thanks!
+  \visible<2->{
+  \begin{center}
+      \includegraphics[width=0.35\textwidth]{napalm.jpg}
+
+
+\begin{footnotesize}
+\emph{``You need to stay focused. Otherwise you miss the subtleties!''} \footnote<2->{\tiny Barney Greenway (Napalm Death), after suprising the audience with a blitz performance of ``You Suffer''.}
+\end{footnotesize}
+  \end{center}
+
+}
+\end{frame}
+\begin{frame}
+
+  \begin{center}
+    Thank You!
+  \end{center}
 
 \end{frame}
-
 
 \end{document}\grid
