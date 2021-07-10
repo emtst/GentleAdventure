@@ -389,93 +389,97 @@ Embark on our Gentle Adventure!!! https://github.com/emtst/GentleAdventure
 
 \begin{frame}{Formalisation of Global and Local Types}
 \begin{small}
+\vspace{-6mm}
+\[
+\begin{array}{ll}
+  \text{Inductively Defined Datatypes} & \text{Coinductively Defined Datatypes}
+  \\[4mm]
 
-  \begin{columns}
-
-    \begin{column}{0.5\textwidth}
-
-      Inductively defined datatypes
-      \[
-      \begin{array}{ll}
-%%     %\tS & ::= \tnat \SEP \tint \SEP\tbool \SEP \tplus \tS \tS \SEP \tpair \tS \tS \\
+\begin{array}{ll}
     \G & ::= \gend \\
      &|\ \gX \\
    &|\ \grec \gX \G \\%
-    &|\ \msg \p\q {\dgt{(\tS).}} {\G}\\[4mm]%
+    &|\ \msg \p\q {\dgt{(\tS).}} {\G}
+\end{array}
+&
+\begin{array}{ll}
+    \coG ::=&\cogend \\
+    &|\ \comsgn \p\q  {\dcog{(\tS).}} {\coG}\\
+    &|\ \comsgs \p\q {\ } {\dcog{(\tS).}} {\coG}
+\end{array}
+\\
+&\\
+\begin{array}{ll}
     \lT & := \lend\\
       &|\ \lX \\
     &|\ \lrec \lX \lT\\
     &|\ \lsnd \q {\dlt{(\tS).}} {\lT}\\
     &|\ \lrcv \p  {\dlt{(\tS).}} {\lT}
   \end{array}
- \]
+&
 
-
-\end{column}
- \begin{column}{0.5\textwidth}
-   Coinductively defined datatypes
-   \[
-  \begin{array}{ll}
-    \coG ::=&\cogend \\
-    &|\ \comsgn \p\q  {\dcog{(\tS).}} {\coG}\\
-    &|\ \comsgs \p\q {\ } {\dcog{(\tS).}} {\coG}
-  \end{array}
-  \]
-
-\vspace{4mm}
-
-    \[
     \begin{array}{ll}
       \colT ::= & \colend\\
       &|\ \colsnd \p {\dcol{(\tS).}} {\colT}\\
       &|\ \colrcv \q {\dcol{(\tS).}} {\colT}
     \end{array}
-  \]
- \end{column}
+\end{array}
+    \]
 
-
-
-
-\end{columns}
 \end{small}
 \end{frame}
 
 
-\begin{frame}{Formalisation of Global and Local Types}
+\begin{frame}[fragile]{Formalisation of Global and Local Types}
 \begin{small}
 
-  \begin{columns}
 
-  \begin{column}{0.5\textwidth}  %%<--- here
   \[
-  \G = \grec \gX {\msg \p\q {(\tS).} \gX}
-  \]
-  \vspace{8mm}
-  \[
-  \begin{array}{l}
+\begin{array}{ccc}
+  \G = \grec \gX {\msg \p\q {(\tS).}\gX} &
+\begin{tikzpicture}[commutative diagrams/every diagram]
+	\node(n1)at (0,0) {};
+	\node(n2)at (2,0) {};
+        \path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(n1) edge node[above] {$\Re$} (n2);
+\end{tikzpicture}
+  &
+  \coG = \comsgn \p \q {\dcog{(\tS).}} {\coG}\\
+  \begin{tikzpicture}[commutative diagrams/every diagram]
+	\node(n1)at (0,2) {};
+	\node(n2)at (0,0) {};
+        \path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(n1) edge node[right] {$\upharpoonright$} (n2);
+  \end{tikzpicture}
+  &&
+  \begin{tikzpicture}[commutative diagrams/every diagram]
+	\node(n1)at (0,2) {};
+	\node(n2)at (0,0) {};
+        \path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(n1) edge node[right] {$\upharpoonright^c$} (n2);
+  \end{tikzpicture}
+  \\
+    \begin{array}{l}
     \proj \G p = \lrec \lX {\lsnd q {(\tS).} \lX}\\
     \proj \G q = \lrec \lX {\lrcv p {(\tS).} \lX}
-  \end{array}
-  \]
-\end{column}
-
-
-\begin{column}{0.5\textwidth}  %%<--- here
-  \[
-  \coG = \comsgn \p \q {\dcog{(\tS).}} {\coG}
-  \]
-  \[
+ \end{array}
+    &
+\begin{tikzpicture}[commutative diagrams/every diagram]
+	\node(n1)at (0,0) {};
+	\node(n2)at (2,0) {};
+        \path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(n1) edge node[above] {$\Re$} (n2);
+\end{tikzpicture}
+    &
   \begin{array}{l}
     \dcol{\colT_\p} =  \colsnd \q {(\tS).} \dcol{\colT_\p}\\
     \dcol{\colT_\q} = \colrcv \p {(\tS).} \dcol{\colT_\q}\\
     \text{with } \coproj \p \coG \dcol{\colT_\p}\\
     \text{and }  \coproj \q \coG \dcol{\colT_\q}
   \end{array}
+\end{array}
   \]
 
-
-\end{column}
-\end{columns}
 
   \end{small}
 \end{frame}
