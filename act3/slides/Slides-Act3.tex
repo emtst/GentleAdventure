@@ -1,0 +1,774 @@
+\documentclass[compress,usepdftitle=false,xcolor=pdftex,svgnames,table,aspectratio=169, 14pt]{beamer}
+
+% Notes
+% \usepackage{pgfpages}
+% \setbeameroption{show notes on second screen=right}
+
+%\definecolor{bluegreen}{RGB}{3, 166, 155}
+%\definecolor{pitchblack}{RGB}{0, 0, 0}
+%\definecolor{lightbeige}{RGB}{255, 251, 241}
+%\definecolor{mediumgray}{RGB}{183, 183, 183}
+
+%\setbeamercolor{background canvas}{bg=pitchblack}
+\setbeamercolor{normal text}{fg=black}
+\setbeamercolor{frametitle}{bg=LightGrey, fg=black}
+\setbeamercolor{title}{fg=black, bg=white}
+\definecolor{blockcolor}{RGB}{250, 250, 200}
+\setbeamercolor{block}{fg=black, bg=blockcolor}
+\setbeamercolor{sticky}{fg=black, bg=blockcolor}
+%\usetheme{plain}
+%\useoutertheme[subsection=false]{miniframes}
+\usefonttheme{professionalfonts}
+%%\setbeamercolor{section in head/foot}{fg=white, bg=black}
+%% \setbeamercolor{mini frame}{fg=white, bg=black}
+\usebeamercolor[fg]{title in head/foot}
+\usefonttheme[onlylarge]{structurebold}
+\setbeamerfont*{frametitle}{size=\normalsize,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+%%\setbeamertemplate{headline}[miniframes theme]{}
+%\setbeamertemplate{footline}[default]
+%\defbeamertemplate{footline}{centered page number}
+%{%
+%  \hspace*{\fill}%
+%  \usebeamercolor[fg]{page number in head/foot}%
+%  \usebeamerfont{page number in head/foot}%
+%  \insertpagenumber\,/\,\insertpresentationendpage%
+%  \hspace*{\fill}\vskip2pt%
+%}
+%\setbeamertemplate{footline}[centered page number]
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{bibliography entry title}{}
+\setbeamertemplate{bibliography entry location}{}
+\setbeamertemplate{bibliography entry note}{}
+
+%\setbeamercolor{background canvas}{bg=LightGrey}
+
+\makeatletter
+\setbeamertemplate{title page}[default][left,colsep=-4bp,rounded=true]
+\makeatother
+\setbeamerfont{frametitle}{size=\large}
+\setbeamerfont{title}{size=\Large}
+\setbeamerfont{subtitle}{size=\small}
+\setbeamerfont{author}{size=\small}
+\setbeamerfont{institute}{size=\small}
+
+\setbeamercolor*{block title alerted}{fg=black, bg=red!40}
+\setbeamercolor*{block body alerted}{fg=black, bg=red!25}
+\setbeamerfont{alerted text}{series=\bfseries}
+\setbeamercolor{alerted text}{fg=blue, bg=white}
+
+\setbeamercolor*{block title example}{fg=blue!50, bg=blue!10}
+\setbeamercolor*{block body example}{fg= blue, bg=blue!5}
+
+\newcommand\mailto[1]{\href{mailto: #1}{#1}}
+
+\newcommand\redbf[1]{{\color{red}\textbf{#1}}}
+
+\newcommand\itm{\color{gray}\scriptsize\raise1.25pt\hbox{\textbullet}}
+
+\setbeamertemplate{itemize item}{\scriptsize\raise1.25pt\hbox{\textbullet}}
+\setbeamertemplate{itemize subitem}{\tiny\raise1.5pt\hbox{\textbf{--}}}
+\setbeamertemplate{itemize subsubitem}{\tiny\raise1.5pt\hbox{\textbf{--}}}
+\setbeamertemplate{enumerate item}{\insertenumlabel.}
+\setbeamertemplate{enumerate subitem}{\insertenumlabel.\insertsubenumlabel}
+\setbeamertemplate{enumerate subsubitem}{\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}
+\setbeamertemplate{enumerate mini template}{\insertenumlabel}
+\setbeamercolor{itemize item}{fg=gray}
+\setbeamercolor{itemize subitem}{fg=gray}
+\setbeamercolor{itemize subsubitem}{fg=gray}
+
+%\usepackage{minted}
+% \usepackage{listings}
+%\input{lstcoq}
+\usepackage{tikz}
+  \usetikzlibrary{calc,decorations.pathreplacing,
+    decorations.pathmorphing,
+    decorations.markings,
+    shapes, fit,
+    arrows.meta
+    }
+  \usetikzlibrary{cd}
+  \usetikzlibrary{positioning}
+  \usetikzlibrary{arrows}
+
+\tikzset{
+    arrow at end/.style={
+        decorate,decoration={
+            markings,
+            mark=at position .999 with{
+                \arrow{#1};
+            }
+        }
+    }
+}
+
+% alternative stealth arrow
+\pgfarrowsdeclare{stealthnew}{stealthnew}
+{
+  \ifdim\pgfgetarrowoptions{stealthnew}=-1pt%
+    \pgfutil@tempdima=0.28pt%
+    \pgfutil@tempdimb=\pgflinewidth%
+    \ifdim\pgfinnerlinewidth>0pt%
+      \pgfmathsetlength\pgfutil@tempdimb{.6\pgflinewidth-.4*\pgfinnerlinewidth}%
+    \fi%
+    \advance\pgfutil@tempdima by.3\pgfutil@tempdimb%
+  \else%
+    \pgfutil@tempdima=\pgfgetarrowoptions{stealthnew}%
+    \divide\pgfutil@tempdima by 8%
+  \fi%
+  \pgfarrowsleftextend{+-3\pgfutil@tempdima}
+  \pgfarrowsrightextend{+5\pgfutil@tempdima}
+}
+{
+  \ifdim\pgfgetarrowoptions{stealthnew}=-1pt%
+    \pgfutil@tempdima=0.28pt%
+    \pgfutil@tempdimb=\pgflinewidth%
+    \ifdim\pgfinnerlinewidth>0pt%
+      \pgfmathsetlength\pgfutil@tempdimb{.6\pgflinewidth-.4*\pgfinnerlinewidth}%
+    \fi%
+    \advance\pgfutil@tempdima by.3\pgfutil@tempdimb%
+  \else%
+    \pgfutil@tempdima=\pgfgetarrowoptions{stealthnew}%
+    \divide\pgfutil@tempdima by 8%
+    \pgfsetlinewidth{0bp}%
+  \fi%
+  \pgfpathmoveto{\pgfqpoint{5\pgfutil@tempdima}{0pt}}
+  \pgfpathlineto{\pgfqpoint{-3\pgfutil@tempdima}{4\pgfutil@tempdima}}
+  \pgfpathlineto{\pgfpointorigin}
+  \pgfpathlineto{\pgfqpoint{-3\pgfutil@tempdima}{-4\pgfutil@tempdima}}
+  \pgfusepathqfill
+}
+
+
+\usepackage[skins]{tcolorbox}
+
+\newtcolorbox{sticky}[1][]
+{%
+  enhanced,
+  center upper,
+  fontupper=\strut,
+  drop fuzzy shadow southeast,
+  boxrule=0pt,
+  sharp corners,
+  colframe=yellow!80!black,
+  colback=yellow!10,
+  #1
+}
+
+\newtcolorbox{infobox}[1][]
+{%
+  enhanced,
+  %center upper,
+  %drop fuzzy shadow southeast,
+  boxrule=0.4pt,
+  sharp corners,
+  colframe=red!80!black,
+  colback=red!10,
+  #1
+}
+
+\newtcolorbox{bluebox}[1][]
+{%
+  enhanced,
+  %center upper,
+  %drop fuzzy shadow southeast,
+  boxrule=0.4pt,
+  sharp corners,
+  colframe=blue!80!black,
+  colback=blue!10,
+  #1
+}
+
+\newtcolorbox{greenbox}[1]
+{%
+  enhanced,
+  %center upper,
+  drop fuzzy shadow southeast,
+  boxrule=0pt,
+  sharp corners,
+  colframe=green!80!black,
+  colback=green!10,
+  #1
+}
+\newtcolorbox{redbox}[1][]
+{%
+  enhanced,
+  % center upper,
+   drop fuzzy shadow southeast,
+  boxrule=0pt,
+  sharp corners,
+  colframe=red!80!black,
+  colback=red!10,
+  #1
+}
+\usepackage{microtype}
+\newsavebox\CBox
+\newcommand<>*\textBF[1]{\sbox\CBox{#1}\resizebox{\wd\CBox}{\ht\CBox}{\textbf#2{#1}}}
+\usepackage{tabularx}
+\usepackage[framemethod=TikZ]{mdframed}
+
+\newmdenv[
+  topline=false,
+  bottomline=false,
+  rightline=false,
+  skipabove=\topsep,
+  skipbelow=\topsep,
+  linewidth=1pt,
+  linecolor=cyan
+]{titlerule}
+
+\setbeamertemplate{frametitle}{%
+  \begin{titlerule}
+    \usebeamerfont{frametitle}\insertframetitle\strut%
+    \vskip-.2\baselineskip%
+    % \leaders\vrule width \paperwidth\vskip0.4pt%
+    \vskip0pt%
+    \nointerlineskip
+  \end{titlerule}
+}
+
+
+\usepackage{bm}
+
+\titlegraphic{%
+  \begin{picture}(382,0)
+    {
+      \put(150,22){\includegraphics[width=3cm]{imperial_logo.pdf}}
+      \put(260,10){\includegraphics[width=2.5cm]{Uok_Logo_RGB294.jpg}}
+    }
+  \end{picture}
+  }
+
+\title{A Gentle Adventure Exploring the Mechanisation of Multiparty Session Types}
+\subtitle{smol-Zooid: A Calculus for Multiparty Session Processes. }
+\author{David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, and Nobuko Yoshida}
+\institute{}
+\date{}
+% \date{%\put(0,-60){
+%   17-05-2021
+% %}
+% }
+\usepackage{tipa} % for phonetic characters
+\usepackage{graphicx}
+\usepackage{ulem} % for strikethrough text with \sout{}
+\usepackage{mathtools} % \Coloneqq
+
+\input{act3macros}
+
+\newcommand{\phoneticZooidA}{%
+  \textprimstress{}zu\textlengthmark\textopeno\textsci{}d
+}
+\newcommand{\phoneticZooidB}{%
+  \textprimstress{}z\textschwa%
+  \raisebox{-.01cm}{\rotatebox[origin=c]{180}{\textscomega}}%
+  \textopeno\textsci{}d
+}
+\newcommand{\phoneticZooidC}{%
+  \textprimstress{}zu\textlengthmark\textsci{}d
+}
+
+\usepackage{soul}
+\newcommand{\mathcolorbox}[2]{\colorbox{#1}{$\displaystyle #2$}}
+\newcommand{\hlfancy}[2]{\sethlcolor{#1}\hl{#2}}
+
+\setlength{\leftmargini}{10pt}
+
+
+\newcommand\blfootnote[1]{%
+\begingroup
+\renewcommand\thefootnote{}\footnote{#1}%
+\addtocounter{footnote}{-1}%
+\endgroup
+}
+
+\begin{document}
+
+\begin{frame}
+	\maketitle
+%	\begin{flushright}
+%	\begin{tiny}
+%	I got the poison, I got the remedy...
+%	\end{tiny}
+%	\end{flushright}
+\end{frame}
+%
+%
+
+
+
+
+
+\begin{frame}{The MPST World, as We Know It}
+
+
+\begin{figure}
+\begin{tikzpicture}
+    [x=1.1cm, y=-1.5cm, align=center, font=\normalsize, draw,
+    every node/.style={minimum width=1.8cm}]+
+		\node [] (G) at (0,0) {$\G$};
+		\node [] (L1) at (-1.5,.8 ) {$\dlt{\lT_1}$};
+		\node [] (L2) at (-.50,.8 ) {$\dlt{\lT_2}$};
+		\node [] (LL) at (.50 ,.8 ) {$\dlt{\dots}$};
+		\node [] (Ln) at ( 1.5,.8 ) {$\dlt{\lT_n}$};
+		\node [] (P1) at (-1.5,1.6) {$\dproc{\proc_1}$};
+		\node [] (P2) at (-.50,1.6) {$\dproc{\proc_2}$};
+		\node [] (PP) at ( .50,1.6) {$\dots$};
+		\node [] (Pn) at ( 1.5,1.6) {$\dproc{\proc_n}$};
+		\draw [->] (G.south) to (L1);
+		\draw [->] (G.south) to (L2);
+		\draw [->, dashed] (G.south) to (LL);
+		\draw [->] (G.south) to (Ln);
+		\draw [->] (L1) to (P1);
+		\draw [->] (L2) to (P2);
+		\draw [->, dashed] (LL) to (PP);
+		\draw [->] (Ln) to (Pn);
+	    \node  at (-2,0.4) {\small projection ($\upharpoonright$)};
+	    \node  at (-2.4,1.2) {\small  typing ($\ofLt$)};
+	\end{tikzpicture}
+\end{figure}
+\blfootnote{\scriptsize K. Honda, N. Yoshida, and M. Carbone. \emph{Multiparty asynchronous session types}. POPL '08}
+
+\end{frame}
+
+
+\begin{frame}{Zooid}
+
+\vspace{-7mm}  \begin{figure}
+\input{thediagram.tex}
+\end{figure}
+
+\blfootnote{\scriptsize D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.
+  \emph{Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes}. PLDI 2021}
+
+\end{frame}
+
+
+
+
+
+\begin{frame}{Introducing the Metatheory of smol-Zooid Types}
+
+\begin{small}
+Simple, but significant multiparty session type metatheory!
+
+
+\begin{figure}
+\begin{tikzpicture}[commutative diagrams/every diagram]
+
+
+	\node(G0)at (0,0) {$\G$};
+	\node(G1)at (3,0) {$\coG$};
+	\node(G2)at (6,0) {\small{global trace}};
+	\node(L0)at (0,-1.5) {$\lT$};
+	\node(L1)at (3,-1.5) {$\colT$};
+	\node(L2)at (6,-1.5) {\small{local trace}};
+
+
+	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(G0) edge node[above] {$\Re$} (G1)
+	(G1) edge node[above] {LTS} (G2)
+	(L0) edge node[above] {$\Re$} (L1)
+	(L1) edge node[above] {LTS} (L2)
+	(G0) edge node[right] {$\upharpoonright$} (L0)
+	(G1) edge node[right] {$\upharpoonright^{\textsf{c}}$} (L1)
+	(G2) edge[<->] node[right] {$=$} (L2)
+
+	;
+
+
+
+\end{tikzpicture}
+\end{figure}
+
+\ \\ \ \\
+Embark on our Gentle Adventure!!! https://github.com/emtst/GentleAdventure
+\end{small}
+\end{frame}
+
+
+
+\begin{frame}{Formalisation of Global and Local Types}
+\begin{small}
+
+  \begin{columns}
+
+    \begin{column}{0.5\textwidth}
+
+      Inductively defined datatypes
+      \[
+      \begin{array}{ll}
+%%     %\tS & ::= \tnat \SEP \tint \SEP\tbool \SEP \tplus \tS \tS \SEP \tpair \tS \tS \\
+    \G & ::= \gend \\
+     &|\ \gX \\
+   &|\ \grec \gX \G \\%
+    &|\ \msg \p\q {\dgt{(\tS).}} {\G}\\[4mm]%
+    \lT & := \lend\\
+      &|\ \lX \\
+    &|\ \lrec \lX \lT\\
+    &|\ \lsnd \q {\dlt{(\tS).}} {\lT}\\
+    &|\ \lrcv \p  {\dlt{(\tS).}} {\lT}
+  \end{array}
+ \]
+
+
+\end{column}
+ \begin{column}{0.5\textwidth}
+   Coinductively defined datatypes
+   \[
+  \begin{array}{ll}
+    \coG ::=&\cogend \\
+    &|\ \comsgn \p\q  {\dcog{(\tS).}} {\coG}\\
+    &|\ \comsgs \p\q {\ } {\dcog{(\tS).}} {\coG}
+  \end{array}
+  \]
+
+\vspace{4mm}
+
+    \[
+    \begin{array}{ll}
+      \colT ::= & \colend\\
+      &|\ \colsnd \p {\dcol{(\tS).}} {\colT}\\
+      &|\ \colrcv \q {\dcol{(\tS).}} {\colT}
+    \end{array}
+  \]
+ \end{column}
+
+
+
+
+\end{columns}
+\end{small}
+\end{frame}
+
+
+\begin{frame}{Formalisation of Global and Local Types}
+\begin{small}
+
+  \begin{columns}
+
+  \begin{column}{0.5\textwidth}  %%<--- here
+  \[
+  \G = \grec \gX {\msg \p\q {(\tS).} \gX}
+  \]
+  \vspace{8mm}
+  \[
+  \begin{array}{l}
+    \proj \G p = \lrec \lX {\lsnd q {(\tS).} \lX}\\
+    \proj \G q = \lrec \lX {\lrcv p {(\tS).} \lX}
+  \end{array}
+  \]
+\end{column}
+
+
+\begin{column}{0.5\textwidth}  %%<--- here
+  \[
+  \coG = \comsgn \p \q {\dcog{(\tS).}} {\coG}
+  \]
+  \[
+  \begin{array}{l}
+    \dcol{\colT_\p} =  \colsnd \q {(\tS).} \dcol{\colT_\p}\\
+    \dcol{\colT_\q} = \colrcv \p {(\tS).} \dcol{\colT_\q}\\
+    \text{with } \coproj \p \coG \dcol{\colT_\p}\\
+    \text{and }  \coproj \q \coG \dcol{\colT_\q}
+  \end{array}
+  \]
+
+
+\end{column}
+\end{columns}
+
+  \end{small}
+\end{frame}
+
+
+%% \begin{frame}{Coinductive Global and Local ``Trees''}
+%%   \begin{columns}
+%% \begin{column}{0.5\textwidth}
+%%   \[
+%%   \coG ::=\; %
+%%   \cogend \;\SEP\;%
+%%   \comsgn \p\q  {\dcog{(\tS).}} {\coG}
+%%   \]
+%%   \vspace{-4mm}
+%%   \[
+%%     \begin{array}{ll}
+%%     \preG  ::= & \pgend\ \coG \;\\
+%%     &\SEP\;\pmsgn \p\q {\dpre{(\tS)}} {\preG}\\
+%%     &\SEP\; \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
+%%     \end{array}
+%%   \]
+%% \vspace{4mm}
+
+%%     \[
+%%     \begin{array}{ll}
+%%       \colT ::= & \colend\;\\
+%%       &\SEP\;\colsnd \p {\dcol{(\tS).}} {\colT}\\
+%%       &\SEP\;\colrcv \q {\dcol{(\tS).}} {\colT}
+%%     \end{array}
+%%   \]
+%% \end{column}
+%% \begin{column}{0.6\textwidth}  %%<--- here
+%%   Inductive prefixes for global ``trees'' $\preG$ are formally introduced for asynchronicity!
+
+%%     \[
+%%   \pmsgn \p\q {\dpre{(\tS)}} {\preG} \step \pmsgs  \p\q {\ } {\dpre{(\tS)}} {\preG}
+%%   \]
+%% \end{column}
+%% \end{columns}
+%% \end{frame}
+
+
+
+
+\begin{frame}{Abandoning Inductive Datatypes}
+ \begin{small}
+  \begin{theorem}[Unravelling preserves projections]
+    Given $\G$, $\lT$, $\coG$ and $\colT$, such that $(a)$ $\projt{\G} \pr = \lT\ $, $(b)$ $\gunroll \G \coG$, and $(c)$ $\lunroll \lT \colT$,
+then $\coproj \pr \coG \colT$.
+  \end{theorem}
+
+
+  \begin{figure}
+\begin{tikzpicture}[commutative diagrams/every diagram]
+
+
+	\node(G0)at (0,0) {$\G$};
+	\node(G1)at (3,0) {$\coG$};
+	%\node(G2)at (6,0) {\small{global trace}};
+	\node(L0)at (0,-1.5) {$\lT$};
+	\node(L1)at (3,-1.5) {$\colT$};
+	%\node(L2)at (6,-1.5) {\small{local trace}};
+
+
+	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	(G0) edge node[above] {$\Re$} (G1)
+	%(G1) edge node[above] {LTS} (G2)
+	(L0) edge node[above] {$\Re$} (L1)
+	%(L1) edge node[above] {LTS} (L2)
+	(G0) edge node[right] {$\upharpoonright$} (L0)
+	(G1) edge node[right] {$\upharpoonright^{\textsf{c}}$} (L1)
+	%(G2) edge[<->] node[right] {$=$} (L2)
+
+	;
+
+\end{tikzpicture}
+  \end{figure}
+
+        \begin{proof}
+          By coinduction. :)
+        \end{proof}
+ \end{small}
+ \blfootnote{\scriptsize The Paco Library for Coq: https://plv.mpi-sws.org/paco/ }
+\end{frame}
+
+\begin{frame}{Type Semantics for Zooid}
+
+\begin{figure}
+\begin{tikzpicture}[commutative diagrams/every diagram]
+
+
+	%\node(G0)at (0,0) {$\G$};
+	\node(G1)at (3,0) {$\coG$};
+	\node(G2)at (6,0) {\small{global trace}};
+	%\node(L0)at (0,-1.5) {$\lT$};
+	\node(L1)at (3,-1.5) {$\colT$};
+	\node(L2)at (6,-1.5) {\small{local trace}};
+
+
+	\path[commutative diagrams/.cd,every arrow,font=\scriptsize]
+	%(G0) edge node[above] {$\Re$} (G1)
+	(G1) edge node[above] {LTS} (G2)
+	%(L0) edge node[above] {$\Re$} (L1)
+	(L1) edge node[above] {LTS} (L2)
+	%(G0) edge node[right] {$\upharpoonright$} (L0)
+	(G1) edge node[right] {$\upharpoonright^{\textsf{c}}$} (L1)
+	(G2) edge[<->] node[right] {$=$} (L2)
+
+	;
+
+
+
+\end{tikzpicture}
+\end{figure}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{With Love, from $\p$ to $\q$}
+
+\begin{footnotesize}
+
+$\p$ sends:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
+\& \&
+\coG\arrow[dd, "\upharpoonright_{\p}"] \\
+\& \& \& \&\\
+\colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
+\end{tikzcd}
+\]
+\ \\
+\ \\
+\ \\
+%\visible<2->{
+$\q$ receives:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[lldd, "\upharpoonright_{\q}"]
+\& \&
+\coG\arrow[dd, "\upharpoonright_{\q}"] \\
+\& \& \& \&\\
+\colrcv \p \dcol{ (S).} \colT\dcol{'} \arrow[rrrr, "?\q\p\tS"]\& \& \& \&\colT\dcol{'}
+\end{tikzcd}
+\]
+%}
+\end{footnotesize}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Tools for our LTS}
+\begin{footnotesize}
+  {\bf Actions.} $!\p\q\tS$ and $?\q\p\tS$\\ \ \\
+  {\bf (Local) Environments.} $E$ such that, $E(\p)=\dcol{\colT_\p}$ where $\coproj \p \coG \dcol{\colT_\p}$\\ \ \\
+  {\bf Queues and Queue Environments.} $Q$, buffers for asynchronous communication.
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\colsnd \q \dcol{(S).} \colT \arrow[rr, "\text{step}"]\& \&\colT\&\&\\[-5mm]
+Q(\p,\q)=[]\arrow[rr,"\text{enqueue}"] \& \& Q(\p,\q)=[S]\arrow[rr,"\text{dequeue}"] \& \& Q(\p,\q)=[]\\[-5mm]
+\& \& \colrcv \p  \dcol{(S).} \colT{\color{dkolive}'}  \arrow[rr, "\text{step}"]\& \& \colT{\color{dkolive}'}
+\end{tikzcd}
+\]
+\visible<2->{
+
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\&\coG\arrow[dl,"{\pmb\upharpoonright}^{\sf c}"]\arrow[dr,"{\pmb\upharpoonright}^{\sf q}"']\&\&\&\coG\arrow[d, "{\pmb\upharpoonright}\!{\pmb\upharpoonright}"]\\
+\dcol{E}\& \&Q\&\&(\dcol{E},Q)
+\end{tikzcd}
+\]
+
+
+}
+\end{footnotesize}
+\end{frame}
+
+
+\begin{frame}{Theorems}
+\begin{small}
+\begin{Theorem}[Step Soundness]
+   If $\coG \stepa{a} \dcog{\coG'}$ and $\coG \osproj (\dcol{E},Q)$,
+   there exist $\dcol{E'}$ and $Q'$ such that
+   $\dcog{\coG'} \osproj (\dcol{E'},Q')$ and
+   $(\dcol{E},Q) \stepa{a} (\dcol{E'},Q')$.
+ \end{Theorem}
+\vspace{3mm}
+\begin{Theorem}[Step Completeness]
+  If $(\dcol{E},Q) \stepa{a} (\dcol{E'},Q')$ and
+  $\coG \osproj (\dcol{E},Q)$, there exist $\dcog{\coG'}$ such that
+  $\dcog{\coG'} \osproj (\dcol{E'},Q')$ and
+  $\coG \stepa{a} \dcog{\coG'}$.
+\end{Theorem}
+\vspace{3mm}
+\begin{theorem}[Trace equivalence]
+  If $\coG\osproj(\dcol{E},Q)$, then
+$\ \glts t \coG\ $
+if and only if $\ \llts t (\dcol{E},Q)\ $.
+\end{theorem}
+
+
+\end{small}
+\end{frame}
+
+\begin{frame}{Lemma, to give the flavour}
+
+
+
+\begin{footnotesize}
+
+$\p$ sends:
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
+\& \&
+\coG\arrow[dd, "\upharpoonright_{\p}"] \\
+\& \& \& \&\\
+\colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
+\end{tikzcd}
+\]
+\end{footnotesize}
+
+\ \\ \ \\
+
+
+\begin{center}
+
+$\longrightarrow$ Coq!
+
+  \end{center}
+
+\end{frame}
+
+\begin{frame}{Our Adventurer Rests and Meditates}
+
+  \begin{small}
+
+    \begin{itemize}
+    \item Formal proofs are not easy! (But useful and fun!)
+    \item Proof design is the key.
+    \item Proof techniques are to be taken seriously: (co)induction, functions VS relations...
+    \end{itemize}
+
+  \end{small}
+
+  \visible<2->{
+  \begin{center}
+      \includegraphics[width=0.3\textwidth]{napalm.jpg}
+
+\begin{small}
+``You need to stay focused. Otherwise you miss the subtleties!'' \footnote<2->{\tiny Barney Greenway (Napalm Death), after suprising the audience with a blitz performance of ``You Suffer''.}
+\end{small}
+  \end{center}
+
+}
+\end{frame}
+
+
+\begin{frame}{Future}
+
+  \begin{small}
+    \begin{itemize}
+    \item Adding Features for Reasoning about Processes
+    \item Moving Further towards Coinduction (e.g., Interaction Trees)
+    \item Hoping for New People and Collaborations :)
+    \end{itemize}
+
+    \ \\
+    Check out our material!
+  \end{small}
+  \begin{footnotesize}
+    \begin{itemize}
+
+  \item[$\rightarrow$] D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.  \emph{Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes''}$\ \ \ \ $
+  PLDI 2021. DOI: https://doi.org/10.1145/3453483.3454041 $\ \ \ \ $
+  website: http://mrg.doc.ic.ac.uk/publications/zooid-paper/
+
+
+\item[$\rightarrow$]This tutorial is available at https://github.com/emtst/GentleAdventure
+  \end{itemize}
+\end{footnotesize}
+
+  \begin{center}
+    Thank You!
+  \end{center}
+
+\end{frame}
+
+\end{document}\grid
