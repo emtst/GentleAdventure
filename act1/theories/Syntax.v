@@ -78,7 +78,7 @@ Inductive proc : Set :=
 | ife : exp -> proc -> proc -> proc
 | par : proc -> proc -> proc
 | inact : proc
-| nu : proc -> proc (* hides the two channel polarities *)
+| nu : proc -> proc
 | bang : proc -> proc (* process replication *)
 .
 Hint Constructors proc.

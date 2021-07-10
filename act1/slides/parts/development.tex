@@ -160,7 +160,7 @@
   \inferrule[t-send]{\eoft\Gamma e S \\ \poftG P {\Delta \cdot k \oft \dst T }}
   {\poftG {\psend k e P} {\Delta\cdot \vch k \oft \tout S T}} \and
 
-  \inferrule[t-receive]{\poft {\Gamma\cdot \vex{x}\oft\dte{S}} P {\Delta \cdot k \oft \dst T }}
+  \inferrule[t-receive]{\poft {\Gamma\cdot \vex{x}\oft\dte{S}} {\openop P x} {\Delta \cdot k \oft \dst T }}
   {\poftG {\precv k x P} {\Delta\cdot \vch k \oft \tin S T}} \and
 
   \inferrule[t-ife]{\eoft\Gamma e \tbool \\ \poftG P \Delta \\ \poftG Q \Delta}
