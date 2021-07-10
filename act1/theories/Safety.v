@@ -140,13 +140,13 @@ Proof.
 Admitted.
 
 Theorem SubjectReduction G P Q D:
-  oft G P D -> (* balanced D -> *) P -->* Q -> exists D', (* balanced D' /\ *) oft G Q D'.
+  oft G P D -> P -->* Q -> exists D', oft G Q D'.
 Proof.
-  move => Hoft (* bD *) PQ; elim: PQ D (* bD *) Hoft => {P} {Q} P.
-  + by move=> D (* bD *) Hoft; exists D.
-  + move=> Q R Step QR IH D (* bD *) Hoft.
+  move => Hoft PQ; elim: PQ D Hoft => {P} {Q} P.
+  + by move=> D Hoft; exists D.
+  + move=> Q R Step QR IH D Hoft.
     move: (SubjectReductionStep Hoft Step) => []D' []bD' Hoft'.
-    by move: (IH D' (* (typred_bal bD' bD) *) Hoft').
+    by move: (IH D' Hoft').
 Qed.
 
 (* Print Assumptions SubjectReduction. *)
