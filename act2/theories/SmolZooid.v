@@ -523,7 +523,8 @@ Proof.
 Qed.
 
 Lemma subst_preserves_type e e' L L' n :
-    of_lty e L -> of_lty e' L' -> of_lty (p_subst n e' e) (l_subst n L' L).
+  of_lty e L -> of_lty e' L' ->
+  of_lty (p_subst n e' e) (l_subst n L' L).
 Proof.
   move=> H; elim: H n=>/=; try by constructor.
   - move=>X n; case: ifP=>/=; try by constructor.
@@ -556,9 +557,11 @@ Proof.
 Qed. 
 (* end hide *)
 
-Theorem preservation (e : proc) (L : lty) (H : of_lty e L) (E : rt_event) :
+Theorem preservation (e : proc) (L : lty)
+        (H : of_lty e L) (E : rt_event) :
   forall e', step e E = Some e' ->
-             exists L', lstep L (ev_erase E) = Some L' /\ of_lty e' L'.
+             exists L', lstep L (ev_erase E) = Some L' /\
+                        of_lty e' L'.
 Proof.
   rewrite /step/lstep.
   move: (unroll_preserves_type _ _ H)=>{}H e'.
@@ -602,18 +605,12 @@ Module Type ProcessMonad.
   Parameter set_current: nat -> t unit.
 End ProcessMonad.
 
-(** We then define a module that describes the implementation of
- processes, and a higher-order module that is used to control
- OCaml code extraction, given a [ProcessMonad]. **)
-Module Type PROCESS.
-  Declare Module PM : ProcessMonad.
-  Parameter proc : PM.t unit.
-End PROCESS.
+(** We then define a module that describes the implementation of processes,
+ given an input [ProcessMonad]. **)
 
-Module Type PROCESS_FUNCTOR (MP: ProcessMonad) <: PROCESS.
-  Module PM := MP.
-  Parameter proc : PM.t unit.
-End PROCESS_FUNCTOR.
+Module Type PROCESS (MP: ProcessMonad).
+  Parameter proc : MP.t unit.
+End PROCESS.
 
 (** The process extraction module takes a [MP : ProcessMonad], and defines the
  [extract_proc] function, that recursivey traverses [proc], and produces code in
@@ -621,21 +618,23 @@ End PROCESS_FUNCTOR.
 Module ProcExtraction (MP : ProcessMonad).
   Fixpoint extract_proc (d : nat) (p : proc) : MP.t unit :=
     match p with
-    | Inact => MP.pure tt
-    | Jump v       => MP.set_current (d - v.+1)
-    | Rec p        => MP.loop d (fun _ => extract_proc d.+1 p)
+    | Inact         => MP.pure tt
+    | Jump v        => MP.set_current (d - v.+1)
+    | Rec p         => MP.loop d (fun _ => extract_proc d.+1 p)
 
-    | Send p T x k => MP.bind (MP.send T p x) (fun=> extract_proc d k)
-    | Recv p T   k => MP.bind (MP.recv T p) (fun x=> extract_proc d (k x))
+    | Send p T x k  => MP.bind (MP.send T p x)
+                               (fun=> extract_proc d k)
+    | Recv p T   k  => MP.bind (MP.recv T p)
+                               (fun x=> extract_proc d (k x))
 
-    | ReadIO T k => MP.bind (MP.pure (@readIO T tt))
-                            (fun x=> extract_proc d (k x))
+    | ReadIO T k    => MP.bind (MP.pure (@readIO T tt))
+                               (fun x=> extract_proc d (k x))
     | WriteIO T x k => MP.bind (MP.pure (@writeIO T x))
-                            (fun=> extract_proc d k)
+                               (fun=> extract_proc d k)
     end.
 End ProcExtraction.
 
-(** *** Extraction **)
+(** *** Example extraction **)
 Require Import Extraction.
 Require Import ExtrOcamlBasic.
 Require Import ExtrOcamlNatInt.
@@ -651,9 +650,8 @@ Opaque maxn.
 About Alice_by_construction.
 
 Let alice := projT1 (projT2 (Alice_by_construction)).
-Module  ALICE (MP : ProcessMonad) : PROCESS_FUNCTOR(MP).
+Module  ALICE (MP : ProcessMonad) : PROCESS(MP).
   Module PE := ProcExtraction(MP).
-  Module PM := MP.
   Definition proc := Eval compute in PE.extract_proc 0 alice.
 End ALICE.
 
