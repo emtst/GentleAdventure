@@ -1,0 +1,143 @@
+\documentclass{article}
+
+\input{macros}
+
+\begin{document}
+
+\section{STLC}
+
+%syntax
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{rrcl}
+    \text{Terms} & \dexp M, \dexp N & \bnfas & \bvar n \bnfalt \fvar x \bnfalt \lam M \bnfalt \app M N\\
+    \text{Types} & \dte S, \dte T & \bnfas & \base \bnfalt \arr S T\\
+  \end{array}
+\end{displaymath}
+
+
+% LN
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{cc}
+    \openop {\dexp M} {\vex x} \equiv \{\vex 0 \rightarrow \vex x\} M & \closeop {\dexp M} {\vex x} \equiv \{\vex 0 \leftarrow \vex x\} \dexp M \\
+    \multicolumn{2}{c}{\lclosed {\dexp M}}\\
+  \end{array}
+\end{displaymath}
+
+% typing
+
+\begin{mathpar}
+  \inferrule{\vex{\Gamma}(\fvar x) = \dte T}{\loft\Gamma{\fvar x}{T}} \and
+  \inferrule{\loft\Gamma M {\arr S T} \\ \loft\Gamma N S}
+  {\loft\Gamma{\app M N} T} \and
+  \inferrule{\forall \vex x \notin L \\ \loft{\Gamma, x\oft S}{\openop M x} T}
+  {\loft\Gamma{\lam M}{\arr S T}}
+\end{mathpar}
+
+\section{smolEMTST}
+
+%syntax
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{rrcl}
+    \text{Expressions} & \dexp{e} & \bnfas & \ett \bnfalt \eff \bnfalt \eone \bnfalt x\\
+    \text{Sorts} & \dte{S} & \mathrel{::=} & \tbool \bnfalt \tunit \\
+
+    \text{Processes} & \dproc{P}, \dproc{Q} & \bnfas & \psend k e P \bnfalt \precv k P \bnfalt \ppar P Q\\
+    & & & \bnfalt \pif e P Q \\
+    & & & \bnfalt \pnu P \bnfalt \pbang P \bnfalt \pinact\\
+    \text{Types} & \dst{T} & \bnfas & \tin S T \bnfalt \tout S T \bnfalt \tend \bnfalt \tbot\\
+  \end{array}
+\end{displaymath}
+
+
+\subsection{Congruence and Reduction }
+
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{rrcl}
+    \DefTirName{c-refl} & \dproc P & \equiv & \dproc P\\
+
+    \DefTirName{c-inact} & \ppar P \pinact & \equiv & \dproc P\\
+
+    \DefTirName{c-comm} & \ppar P Q & \equiv & \ppar Q P\\
+    \DefTirName{c-assoc} & \ppar{(\ppar P Q)} R & \equiv & \ppar P {(\ppar Q R)} \\
+
+    \DefTirName{c-nu} & \pnu {(\ppar P Q)} & \equiv & \ppar {\pnu P} Q \quad \text{if}\ \lclosed {\dproc Q}\\
+    \DefTirName{c-nu'} & \pnu\pinact & \equiv & \pinact \\
+
+  \end{array}
+\end{displaymath}
+
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{rc}
+    \DefTirName{r-com} & \pred {\ppar {\psend k e P}{\precv k Q}} {\ppar P {\openop Q e}}\\
+
+    \DefTirName{r-cong} & \dproc{P}\equiv\dproc{P'} \text{and}\ \pred {P'} {Q'}
+                          \text{and}\ \dproc{Q'}\equiv\dproc{Q}
+                          \Rightarrow \pred P Q\\
+
+    \DefTirName{r-scop} & \pred P Q \Rightarrow \pred {\pnu P} {\pnu Q} \\
+
+    \DefTirName{r-par} & \pred P {P'} \Rightarrow \pred {\ppar P Q} {\ppar {P'} Q}\\
+
+    \DefTirName{r-if-tt} & \pred {\pif \ett P Q} P\\
+
+    \DefTirName{r-if-ff} & \pred {\pif \eff P Q} Q\\
+  \end{array}
+\end{displaymath}
+
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{rc}
+    \DefTirName{r-com} & \pred {\ppar {\psend k e P}{\precv k Q}} {\ppar P {\openop Q e}}\\
+
+    \DefTirName{r-cong} & \dproc{P}\equiv\dproc{P'} \text{and}\ \pred {P'} {Q'}
+                          \text{and}\ \dproc{Q'}\equiv\dproc{Q}
+                          \Rightarrow \pred P Q\\
+
+    \DefTirName{r-scop} & \forall {\vch k} \notin L \quad
+                          \pred {\openop P k} {\openop Q k}
+                          \Rightarrow \pred {\pnu P} {\pnu Q} \\
+
+    \DefTirName{r-par} & \pred P {P'} \Rightarrow \pred {\ppar P Q} {\ppar {P'} Q}\\
+
+    \DefTirName{r-if-tt} & \pred {\pif \ett P Q} P\\
+
+    \DefTirName{r-if-ff} & \pred {\pif \eff P Q} Q\\
+  \end{array}
+\end{displaymath}
+
+\subsection{Typing}
+
+\begin{mathpar}
+  \inferrule[t-send]{\eoft\Gamma e S \\ \poftG P {\Delta \cdot k \oft \dst T }}
+  {\poftG {\psend k e P} {\Delta\cdot \vch k \oft \tout S T}} \and
+
+  \inferrule[t-receive]{\forall \vex x\notin L\\
+    \poft{\Gamma\cdot \vex{x}\oft\dte{S}} {\openop P x} {\Delta \cdot k \oft \dst T }}
+  {\poftG {\precv k P} {\Delta\cdot \vch k \oft \tin S T}} \and
+
+  \inferrule[t-ife]{\eoft\Gamma e \tbool \\ \poftG P \Delta \\ \poftG Q \Delta}
+  {\poftG {\pif e P Q} \Delta} \and
+
+  \inferrule[t-par]
+  {\poftG P \Delta \\ \poftG P {\Delta'} \\ \pcompatible\Delta{\Delta'}}
+  {\poftG {\ppar P Q} {\pcompose \Delta {\Delta'}}} \and
+
+  \inferrule[t-inact]{\completed \Delta}{\poftG \pinact \Delta} \and
+
+  \inferrule[t-nu]{\forall \vch k \notin L \\ \poftG {\openop P k} {\Delta\cdot k \oft \tbot}}
+  {\poftG {\pnu P} \Delta} \and
+
+  \inferrule[t-nu']{\poftG P \Delta}{\poftG {\pnu P}  \Delta} \and
+
+  \inferrule[t-bang]{\completed D \\ \poftG P \cdot}{\poftG {\pbang P} \Delta}
+\end{mathpar}
+
+
+
+
+\end{document}

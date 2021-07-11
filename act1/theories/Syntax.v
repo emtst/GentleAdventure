@@ -78,7 +78,7 @@ Inductive proc : Set :=
 | ife : exp -> proc -> proc -> proc
 | par : proc -> proc -> proc
 | inact : proc
-| nu : proc -> proc (* hides the two channel polarities *)
+| nu : proc -> proc
 | bang : proc -> proc (* process replication *)
 .
 Hint Constructors proc.
@@ -169,7 +169,7 @@ Inductive lc : proc -> Prop :=
 | lc_inact : lc inact
 
 | lc_nu : forall (L : seq CH.atom) P,
-    (forall kp kn, kp \notin L -> kn \notin L -> kp != kn ->  lc (open_k0 (open_k0 P (CH.Free kp)) kn)) ->
+    (forall k, k \notin L ->  lc (open_k0 P (CH.Free k))) ->
     lc (nu P)
 
 | lc_bang P: lc P -> lc (bang P)
