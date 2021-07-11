@@ -299,21 +299,21 @@
 
 
 \begin{frame}{The MPST World, as We Know It}
-
+\begin{small}
 
 \begin{figure}
 \begin{tikzpicture}
     [x=1.1cm, y=-1.5cm, align=center, font=\normalsize, draw,
     every node/.style={minimum width=1.8cm}]+
-		\node [] (G) at (0,0) {$\G$};
-		\node [] (L1) at (-1.5,.8 ) {$\dlt{\lT_1}$};
-		\node [] (L2) at (-.50,.8 ) {$\dlt{\lT_2}$};
-		\node [] (LL) at (.50 ,.8 ) {$\dlt{\dots}$};
-		\node [] (Ln) at ( 1.5,.8 ) {$\dlt{\lT_n}$};
-		\node [] (P1) at (-1.5,1.6) {$\dproc{\proc_1}$};
-		\node [] (P2) at (-.50,1.6) {$\dproc{\proc_2}$};
-		\node [] (PP) at ( .50,1.6) {$\dots$};
-		\node [] (Pn) at ( 1.5,1.6) {$\dproc{\proc_n}$};
+		\node [] (G) at (0,0) {\footnotesize $\G$};
+		\node [] (L1) at (-1.5,.8 ) {\footnotesize $\dlt{\lT_1}$};
+		\node [] (L2) at (-.50,.8 ) {\footnotesize $\dlt{\lT_2}$};
+		\node [] (LL) at (.50 ,.8 ) {\footnotesize $\dlt{\dots}$};
+		\node [] (Ln) at ( 1.5,.8 ) {\footnotesize $\dlt{\lT_n}$};
+		\node [] (P1) at (-1.5,1.6) {\footnotesize $\dproc{\proc_1}$};
+		\node [] (P2) at (-.50,1.6) {\footnotesize $\dproc{\proc_2}$};
+		\node [] (PP) at ( .50,1.6) {\footnotesize $\dots$};
+		\node [] (Pn) at ( 1.5,1.6) {\footnotesize $\dproc{\proc_n}$};
 		\draw [->] (G.south) to (L1);
 		\draw [->] (G.south) to (L2);
 		\draw [->, dashed] (G.south) to (LL);
@@ -322,12 +322,13 @@
 		\draw [->] (L2) to (P2);
 		\draw [->, dashed] (LL) to (PP);
 		\draw [->] (Ln) to (Pn);
-	    \node  at (-2,0.4) {\small projection ($\upharpoonright$)};
-	    \node  at (-2.4,1.2) {\small  typing ($\ofLt$)};
-	\end{tikzpicture}
+	    \node  at (-2,0.4) {\footnotesize projection ($\upharpoonright$)};
+	    \node  at (-2.4,1.2) {\footnotesize typing ($\ofLt$)};
+\end{tikzpicture}
+
 \end{figure}
 \blfootnote{\scriptsize K. Honda, N. Yoshida, and M. Carbone. \emph{Multiparty asynchronous session types}. POPL '08}
-
+\end{small}
 \end{frame}
 
 
