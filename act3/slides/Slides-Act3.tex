@@ -690,34 +690,48 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 \end{frame}
 
 \begin{frame}{Lemma, to give the flavour}
-
-
-
+\vspace{-4mm}
+\begin{columns}
+\begin{column}{0.7\textwidth}
 \begin{footnotesize}
 
-$\p$ sends:
 \[
 \begin{tikzcd}[ampersand replacement=\&]
 \comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
 \& \&
-\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rrdd, "\upharpoonright_{\p}"]
 \& \&
-\coG\arrow[dd, "\upharpoonright_{\p}"] \\
+\\
 \& \& \& \&\\
 \colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
 \end{tikzcd}
 \]
+\ \\
+\ \\
+%\visible<2->{
+\[
+\begin{tikzcd}[ampersand replacement=\&]
+\comsgn \p\q \dcog{ (S).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
+\& \&
+\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[lldd, "\upharpoonright_{\q}"]
+\\
+\& \& \\
+\colrcv \p \dcol{ (S).} \colT\dcol{'} \&\&
+\end{tikzcd}
+\]
+
 \end{footnotesize}
-
-\ \\ \ \\
-
+\end{column}
+%\ \\ \ \\
+\begin{column}{0.3\textwidth}
 
 \begin{center}
 
 $\longrightarrow$ Coq!
 
   \end{center}
-
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{Our Adventurer Rests and Meditates}
@@ -746,7 +760,7 @@ $\longrightarrow$ Coq!
 
 
 \begin{frame}{Future}
-
+\vspace{-2mm}
   \begin{small}
     \begin{itemize}
     \item Adding Features for Reasoning about Processes
@@ -754,15 +768,17 @@ $\longrightarrow$ Coq!
     \item Moving Further towards Coinduction (e.g., Interaction Trees)
     \item Hoping for New People and Collaborations :)
     \end{itemize}
-
-    \ \\
-    Check out our material!
+   \end{small}
+  \ \\
+  \begin{small}
+    \textcolor{violet}{Check out our material!}
   \end{small}
+
   \begin{footnotesize}
     \begin{itemize}
 
-  \item[$\rightarrow$] D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.  \emph{Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes''}$\ \ \ \ $
-  PLDI 2021. DOI: https://doi.org/10.1145/3453483.3454041 $\ \ \ \ $
+    \item[$\rightarrow$] D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.  \emph{''Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes''}. PLDI 2021. \\
+      DOI: https://doi.org/10.1145/3453483.3454041 \\
   website: http://mrg.doc.ic.ac.uk/publications/zooid-paper/
 
 
@@ -771,7 +787,7 @@ $\longrightarrow$ Coq!
 \end{footnotesize}
 
   \begin{center}
-    Thank You!
+    \textcolor{violet}{Thank You!}
   \end{center}
 
 \end{frame}
