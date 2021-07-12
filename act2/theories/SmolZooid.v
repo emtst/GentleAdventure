@@ -1,7 +1,6 @@
 (** printing nat %\ensuremath{\mathbb{N}}% #&#8469;# *)
 (** printing -> %\ensuremath{\to}% #&#8594;$ *)
 
-
 (* begin hide *)
 Require Import mathcomp.ssreflect.all_ssreflect.
 Require Import Paco.paco.
