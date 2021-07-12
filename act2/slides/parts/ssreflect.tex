@@ -1,0 +1,76 @@
+\begin{frame}
+    \frametitle{Small-scale reflection (I)}
+    Formal proof methodology, based on the pervasive use of
+\emph{computation} with symbolic representations
+    \begin{itemize}
+    \item Users have fine-grained control of switching between logical and symbolic representations
+    \item E.g. boolean expressions and propositions
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Small-scale reflection (and II)}
+    SSReflect proof scripts differ from regular Coq scripts: 
+    \begin{itemize}
+    \item Three separated kinds of steps: (1) deduction, (2) bookkeeping, and (3) rewriting
+    \item Better support for \emph{forward} steps
+    \item Precise bookkeeping, with no name generation heuristics
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{SSReflect bookkeeping}
+    Precise bookkeeping is central to SSReflect proofs: \verb|=>| and \verb|:|
+    \vspace{1cm}
+    \begin{minted}{coq}
+Lemma subnK : forall m n, n <= m -> m - n + n = m.
+Proof.
+    move => m n le_n_m.
+    move: m le_n_m.
+    ...
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{SSReflect tactics}
+    \begin{itemize}
+        \item New (or renamed) tactics
+            \begin{itemize}
+            \item {\color{blue}\tt move}: identity tactic
+            \item {\color{blue}\tt case}: case analysis
+            \item {\color{blue}\tt elim}: induction
+            \item {\color{blue}\tt have}: forward step tactic
+            \item {\color{blue}\tt apply}: backward step tactic
+            \item {\color{blue}\tt rewrite}: goal rewriting
+            \end{itemize}
+        \item Special symbols
+            \begin{itemize}
+                \item \verb|//|: solve trivial goals
+                \item \verb|/=|: simplify goal
+                \item \verb|//=|: simplify and solve trivial goals
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Views}
+    \begin{minted}{coq}
+Goal forall p q r, (p -> q) -> (q -> r) -> p -> r.
+  move => p q r H1 H2
+  by move/H1/H2.
+Qed.
+    \end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Reflection}
+    \begin{minted}{coq}
+Inductive reflect (P: Prop) : bool -> Type :=
+| Reflect_true: P => reflect P true
+| Reflect_false: ~P => reflect P false.
+
+eqP : forall {T : eqType} {x y : T},
+        reflect (x = y) (x == y)
+    \end{minted}
+    
+\end{frame}
