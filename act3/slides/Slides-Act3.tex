@@ -239,7 +239,7 @@
   \end{picture}
   }
 
-\title{A Gentle Adventure Exploring the Mechanisation of Multiparty Session Types}
+\title{A Gentle Adventure Mechanising Message Passing Concurrency Systems}
 \subtitle{Formalising the Metatheory for smol-Zooid}
 \author{David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, and Nobuko Yoshida}
 \institute{}
@@ -461,8 +461,8 @@ Embark on our Gentle Adventure!!! https://github.com/emtst/GentleAdventure
   \end{tikzpicture}
   \\
     \begin{array}{l}
-    \proj \G p = \lrec \lX {\lsnd q {(\tS).} \lX}\\
-    \proj \G q = \lrec \lX {\lrcv p {(\tS).} \lX}
+    \proj \G \p = \lrec \lX {\lsnd \q {(\tS).} \lX}\\
+    \proj \G \q = \lrec \lX {\lrcv \p {(\tS).} \lX}
  \end{array}
     &
 \begin{tikzpicture}[commutative diagrams/every diagram]
