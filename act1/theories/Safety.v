@@ -46,22 +46,34 @@ Proof.
   + move=>D k0 T ; split ; first by rewrite !def_addb.
     move=> k.
     by do ! rewrite !in_addb.
-  + move=> D D' k0 T DD' []-IhD Ih_k.
-    do ! rewrite ?def_addb ?in_addb ?negb_and ?negb_or.
-    do ! rewrite  !IhD !Ih_k; split=>//.
-    move=> k; move: IhD; case: D DD' Ih_k; case: D' =>// f f' _.
-    rewrite /dom => Ih _; rewrite /add/look/dom/upd.
-    case: suppP=>[v /eqP/in_supp_fnd|/eqP/notin_supp_fnd];
-                   first by rewrite Ih =>->/=.
-    rewrite Ih => /negPf->.
-    (* rewrite !supp_ins !inE (* ke_eqE *) eq_refl /=. *)
-    (* rewrite (negPf (pol_dual_noteq _))/=; last by rewrite dual_polK. *)
-    (* case: suppP=>[v /eqP/in_supp_fnd|/eqP/notin_supp_fnd]; *)
-    (*                first by rewrite Ih=>->. *)
-    (* rewrite Ih => /negPf->. *)
-    (* by do ! rewrite !supp_ins !inE; rewrite Ih. *)
-(* Qed. *)
-Admitted.
+  + intros D D' k T.
+    intros Hred.
+    intros HD.
+    destruct HD.
+    split.
+    - unfold def.
+      unfold add.
+      rewrite <- H0.
+      destruct (k \in dom D); auto.
+      destruct D; simpl.
+      + assert (D' = Undef _ _). {
+          destruct D'.
+          - auto.
+          - inversion H.
+        }
+        rewrite H1. auto.
+      + destruct D'; simpl; auto.
+    - intro.
+      repeat rewrite in_dom_add.
+      destruct (D) eqn:H1;
+      destruct (D') eqn:H2; auto;
+      inversion H.
+
+      destruct (k0 \in dom (Def f)) eqn: H3;
+      rewrite H0 in H3; rewrite H3;
+      destruct (k \in dom (Def f)) eqn:H4;
+      unfold add; rewrite H4; rewrite H0 in H4; rewrite H4; auto.
+  Qed.
 
 
 (* Lemma typred_undef D : undef_env ~~> D -> D = undef_env. *)
