@@ -98,7 +98,11 @@ Proof.
     by apply: Weakening.
   }
   { (* c_comm *)
-    admit.
+    intros.
+    inversion H.
+    rewrite composeC.
+    apply t_par; auto.
+    apply compatibleC; auto.
   }
   { (* c_asoc *)
     admit.
