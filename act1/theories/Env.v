@@ -353,9 +353,15 @@ Section Environment.
   Definition disjoint (E1 E2 : env) : bool :=
     if (E1, E2) is (Def els, Def els') then disj els els' else false.
 
+  Lemma disjoint_nil_def : forall els, disjoint nil (Def els).
+  Proof.
+  intros.
+  rewrite/disjoint/nil; rewrite disjC; apply disj_nil.
+  Qed.
+
   Lemma disjoint_nil : disjoint nil nil.
   Proof.
-    rewrite/disjoint/nil ; apply disj_nil.
+    apply disjoint_nil_def.
   Qed.
 
   Definition union (E1 E2 : env) : env :=
