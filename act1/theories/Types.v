@@ -144,10 +144,17 @@ Inductive compatible : forall (E1 E2 : tp_env), Prop :=
 .
 Hint Constructors compatible.
 
-Definition compatible_nil : compatible nil nil.
+Lemma compatible_nil_def : forall els, compatible nil (Def els).
+Proof.
+  intros.
   apply compatible_disj.
-  apply disjoint_nil.
-Defined.
+  apply disjoint_nil_def.
+Qed.
+
+Lemma compatible_nil : compatible nil nil.
+Proof.
+  apply compatible_nil_def.
+Qed.
 
 Lemma compatibleC E1 E2 : compatible E1 E2 -> compatible E2 E1.
   elim=>//.
