@@ -114,7 +114,16 @@ Proof.
     admit.
   }
   { (* c_bang *)
-    admit.
+    intros.
+    inversion H.
+    rewrite <- compose0.
+    rewrite composeC.
+    apply t_par; auto.
+    inversion H1.
+    inversion H5.
+    destruct D.
+    inversion H8.
+    apply compatible_nil_def.
   }
 (* Qed. *)
 Admitted.

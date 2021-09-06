@@ -10,6 +10,7 @@ Require Import MiniEMTST.OddsAndEnds.
 Require Import MiniEMTST.AtomScopes.
 Require Import MiniEMTST.Syntax.
 Require Import MiniEMTST.Env.
+Require Import MiniEMTST.OddsAndEnds.
 
 (* syntax of types *)
 
@@ -208,6 +209,31 @@ Proof.
   rewrite /compose/spl.
   rewrite (fmap_const_eq bottom eq_supp).
     by rewrite -fcatA // fcatC // [fcat (diff f' f) _]fcatC.
+Qed.
+
+Lemma compose0 D: D o nil = D.
+Proof.
+  destruct D; auto.
+  unfold compose.
+  unfold spl.
+  destruct nil eqn:H; try inversion H.
+  rewrite intersect_nil.
+  rewrite diff_nil_d.
+  rewrite diff_d_nil.
+  rewrite fcats0.
+  assert (forall (V1 V2: eqType) (K: ordType),
+  forall f: V1 -> V2,
+  fmap_map (V1 := V1) (V2 := V2) (K := K) f (finmap.nil _ _) = (finmap.nil _ _)).
+  {
+    intros.
+    rewrite <- supp_nilE.
+    rewrite supp_map.
+    rewrite supp_nil.
+    reflexivity.
+  }
+  rewrite H0.
+  rewrite fcats0.
+  reflexivity.
 Qed.
 
 (* some properties of compatible environments and of defined envirnments *)
