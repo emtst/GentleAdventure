@@ -149,9 +149,18 @@ Proof.
 
   { (* r_cong *)
     (* will make use of CongruencePreservesOft *)
-    admit.
+    intros.
+    assert (exists D' : tp_env, D ~~> D' /\ oft G Q' D').
+    {
+      apply H3.
+      apply CongruencePreservesOft with (P := P); auto.
+    }
+    destruct H5 as [D'].
+    exists D'.
+    destruct H5.
+    split; auto.
+    apply CongruencePreservesOft with (P := Q'); auto.
   }
-
   { (* r_scop *)
     admit.
   }
