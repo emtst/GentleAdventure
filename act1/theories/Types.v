@@ -128,6 +128,51 @@ Definition completed (D : tp_env) : Prop :=
 
 Definition chan_of_entry (c : tp_env_entry) : CH.var := c. (* TODO REMOVE *)
 
+Lemma weaken_completed (D: tp_env):
+  forall k T, (completed (add k T D)) -> completed D.
+Proof.
+  intros.
+  unfold completed.
+  split.
+  {
+    destruct H.
+    inversion H.
+    destruct D; auto.
+  }
+  {
+    destruct H.
+    intros.
+    assert (a \in dom (add k T D) -> binds a ended (add k T D)).
+    { exact (H0 a). }
+    assert (a <> k).
+    {
+      unfold not.
+      intros.
+      unfold add in H.
+      rewrite <- H3 in H.
+      rewrite H1 in H.
+      auto.
+    }
+    rewrite in_dom_add in H2.
+    rewrite H in H2.
+    rewrite H1 in H2.
+    simpl in H2.
+    rewrite orb_true_r in H2.
+    assert (binds a ended (add k T D)).
+    { apply H2; auto. }
+    apply binds_next in H4; auto.
+    unfold negb.
+    destruct (eq_op a k) eqn:eqak.
+    {
+      admit.
+      (* Should be trivial from H3 and eqak, but how???? *)
+      (* TODO martin*)
+    }{
+      auto.
+    }
+  }
+Admitted. 
+
 (* compatible environments *)
 
 (* lift dual to option *)

@@ -110,8 +110,18 @@ Proof.
   { (* c_nu *)
     admit.
   }
-  { (* c_nu_inact *)
-    admit.
+  {
+    (* c_nu_inact *)
+    intro.
+    inversion H; auto.
+    apply t_inact;
+    move: (CH.fresh _) (CH.fresh_not_in L) => ki ki_L;
+    assert (oft G (open_k0 inact ki) (add ki T (add ki (dual T) D))); try
+    exact (H2 _ ki_L);
+    unfold open_k0 in H4; unfold open_k in H4;
+    inversion H4; auto.
+    inversion H5.
+    repeat apply weaken_completed in H5; auto.
   }
   { (* c_bang *)
     intros.
