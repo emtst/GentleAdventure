@@ -75,7 +75,18 @@ Fixpoint eq_tp (T T': tp) : bool :=
   end.
 
 Lemma eq_imp_eq : forall x y, eq_tp x y -> x = y.
-Proof. Admitted.
+Proof.
+  move=> x;
+  elim x; try (by move=> y; elim y => //);
+    move=> s t IH y;
+    case: y => //;
+    move=> s' t' /andP; fold eq_tp; move=> H; case: H;
+    move=> H H0;
+    assert (H1: s = s') by (apply/eq_sortP; auto);
+    assert (H2: t = t') by ( apply/IH; auto);
+    rewrite H1; rewrite H2; reflexivity.
+Qed.
+
 (*   apply tp_sort_mutind ; intros; try destruct y  ; try destruct s'; try easy ; *)
 (*   inversion H1 ; apply Bool.andb_true_iff in H3 ; destruct H3 ; *)
 (*   try(move:H3 ; move/H0=>H3 ; move:H2 ; move/H=>H4 ; by rewrite H3 H4). *)
@@ -157,21 +168,11 @@ Proof.
     rewrite H in H2.
     rewrite H1 in H2.
     simpl in H2.
-    rewrite orb_true_r in H2.
-    assert (binds a ended (add k T D)).
-    { apply H2; auto. }
-    apply binds_next in H4; auto.
-    unfold negb.
-    destruct (eq_op a k) eqn:eqak.
-    {
-      admit.
-      (* Should be trivial from H3 and eqak, but how???? *)
-      (* TODO martin*)
-    }{
-      auto.
-    }
+    move: H2; rewrite orbT=>/(_ is_true_true)-H4.
+    apply binds_next in H4 ; auto.
+    by apply/eqP.
   }
-Admitted. 
+Qed.
 
 (* compatible environments *)
 
@@ -280,6 +281,14 @@ Proof.
   rewrite fcats0.
   reflexivity.
 Qed.
+
+(*
+Lemma composeAdd D1 D2 k T: (add k T D1) o D2 = (add k T (D1 o D2)).
+
+This does *not* hold, typically if k ∈ D2, then (add k T D1) o D2 is defined,
+with k ¬∈ ((add k T D1) o D2) (matching elements are removed), while
+add k T (D1 o D2) = undef_env (adding an already existing key results in undef_env).
+*)
 
 (* some properties of compatible environments and of defined envirnments *)
 Lemma compatible_hd k t t' E1 E2:
@@ -415,7 +424,6 @@ Lemma oft_def G P D:
   oft G P D -> def D.
 Proof.
 Admitted.
-
 
 Lemma oft_def_ctx G P D:
   oft G P D -> def G.
