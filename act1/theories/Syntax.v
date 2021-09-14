@@ -178,6 +178,22 @@ Hint Constructors lc.
 
 (* TODO what about lines 803-1346 SyntaxR.v *)
 
+(* Lemma lcP P : reflect (lc P) (lcb P).
+Admitted. *)
+
+Lemma opk_lc k u P :
+    lc P ->
+    P = {opk k ~> u} P.
+Proof.
+(*  move => /lcP/andP-[/andP-[/andP-[_ _] fk] _]; move:fk; rewrite /free_k =>fk.
+  have : k \notin get_fbound_k 0 P by move: fk => /eqP->.
+  (have: k = 0 + k by []); move: fk 0 {2 3}k =>_ n k0.
+  apply: opk_notfree.
+Qed. *)
+Admitted.
+
+
+
 (**** important definitions ****)
 
 (* structural congruence *)

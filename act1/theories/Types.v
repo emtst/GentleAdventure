@@ -418,7 +418,26 @@ Qed.
 Lemma oft_lc G P D:
   oft G P D -> lc P.
 Proof.
-Admitted.
+  elim; try by [];
+  intros.
+  {
+    by apply: lc_send => //;
+    apply oft_exp_lc with (G := G0) (S := S).
+  }{
+    by apply lc_receive with (L := L).
+  }{
+    by apply: lc_ife => //;
+    apply oft_exp_lc with (G := G0) (S := boole).
+  }{
+    by apply lc_par.
+  }{
+    by apply lc_nu with (L := L).
+  }{
+    by apply: (lc_nu (L:=[::]))=> k k_ninL //; rewrite /open_k0 -opk_lc.
+  }{
+    by apply: lc_bang.
+  }
+Qed.
 
 Lemma oft_def G P D:
   oft G P D -> def D.
