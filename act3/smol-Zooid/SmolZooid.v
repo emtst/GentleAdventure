@@ -2199,7 +2199,8 @@ Section CProject_defs.
     - by move=> F T C FT H LE; apply/WF_msg=>//=; apply LE.
   Qed.
 
-  (*Variable co_merge : (lbl -> option (mty * rl_ty)) -> rl_ty -> Prop.*)
+  (*Projection: Coinductive Definition*)
+
 
   Definition proj_rel := rg_ty -> rl_ty -> Prop.
   Inductive Proj_ (p : role) (r : proj_rel) : proj_rel :=
@@ -2223,6 +2224,7 @@ Section CProject_defs.
       by move=>G part; constructor.
   Qed.
   Hint Resolve Proj_monotone.
+
   Definition Project p CG CL := paco2 (Proj_ p) bot2 CG CL.
 
   Lemma Project_inv (p : role) (G : rg_ty) (L : rl_ty)
@@ -2565,22 +2567,25 @@ Section ProjectionsCommute.
       by apply/EqL_refl.
   Qed.*)
 
+(*Unrolling Preserves Projection*)
+
   Lemma project_nonrec (r0 : proj_rel ) r CL CG L G
+
         (CIH : forall cG cL iG iL,
             g_closed iG ->
             guarded 0 iG ->
-            (*non_empty_cont iG ->*)
             project iG r == Some iL ->
             GUnroll iG cG ->
             LUnroll iL cL ->
             r0 cG cL)
+
         (cG : g_closed G)
         (gG : guarded 0 G)
-        (*NE : non_empty_cont G*)
         (nrG : forall G' : g_ty, G != g_rec G')
         (iPrj : project G r = Some L)
         (GU : GUnroll G CG)
         (LU : LUnroll L CL)
+
     : paco2 (Proj_ r) r0 CG CL.
   Proof.
     move: (closed_not_var cG).
@@ -2638,12 +2643,14 @@ Section ProjectionsCommute.
                      (ex_intro _ _
                         (conj _ (conj _ (conj _ (conj _ _)))))))-CIH.
     move=> cG cL [iG] [cG'] [ciG] [giG] [iGiL] [GU LU].
+
     move: iGiL  => /eqP-iGiL.
     move: (project_unroll (rec_depth iG) ciG iGiL) => [U1] [U2] [L] [proj] U12.
     move: LU =>/(LUnroll_ind U1); move: U12=>->; rewrite -LUnroll_ind=>UL.
     move : GU (unroll_guarded ciG giG)=>/(GUnroll_ind (rec_depth iG))=>GU nrG.
     move: (g_guarded_nunroll (rec_depth iG) ciG giG)=>guiG.
     move: (g_closed_unroll (rec_depth iG) ciG)=>cuiG {ciG giG iGiL}.
+
       by apply/(project_nonrec CIH cuiG guiG nrG proj).
   Qed.
 
