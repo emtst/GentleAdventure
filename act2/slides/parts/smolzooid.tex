@@ -146,6 +146,17 @@ Definition p_unroll : proc -> proc := ...
     \end{minted}
 \end{frame}
 
+\begin{frame}[fragile]{Semantics: recursion unrolling}
+	\begin{minted}{coq}
+Fixpoint p_subst d e' e :=
+match e with
+| Rec e => Rec (p_subst d.+1 e' e)
+| Jump X => if X == d then p_shift d 0 e' else e
+| ...
+end.
+	\end{minted}
+\end{frame}
+
 \begin{frame}[fragile]
     \frametitle{Semantics: step}
 The step of the LTS is defined as a \textbf{function}:
