@@ -2567,7 +2567,7 @@ Section ProjectionsCommute.
       by apply/EqL_refl.
   Qed.*)
 
-(*Unrolling Preserves Projection*)
+
 
   Lemma project_nonrec (r0 : proj_rel ) r CL CG L G
 
@@ -2622,6 +2622,10 @@ Section ProjectionsCommute.
           - by apply: (participants_unroll gun); rewrite eq3 in partC.
           - by move: prj gun LU=>/eqP; move: cl gu; rewrite eq3 eqL; apply CIH.
   Qed.
+
+
+(*Unravelling Preserves Projection*)
+
 
   Theorem ic_proj r :
     forall iG iL cG cL,
@@ -3347,6 +3351,8 @@ Section TraceEquiv.
 
   Lemma look_same E F L : look E.[F <- L] F = L.
   Proof. by rewrite /look fnd_set eq_refl. Qed.
+
+ (*Step: F sends*)
 
   Lemma Projection_send F T t G P :
     Projection (ig_msg false F T (t,G)) P ->

@@ -241,7 +241,7 @@
   }
 
 \title{Coq-Metatheory for smolZooid}
-\subtitle{A Gentle Adventure Mechanising Message Passing Concurrency Systems}
+\subtitle{A Gentle Adventure Mechanising Message Passing Concurrency Systems, Act 3}
 
 \author{David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, Martin Vassor, and Nobuko Yoshida}
 \institute{}
@@ -633,13 +633,13 @@ then $\coproj \pr \coG \colT$.
 $\p$ sends:
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
+\comsgn \p\q \dcog{ (\tS).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
 \& \&
-\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
+\comsgs \p\q {\ } \dcog{ (\tS).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[rrdd, "\upharpoonright_{\p}"]
 \& \&
 \coG\arrow[dd, "\upharpoonright_{\p}"] \\
 \& \& \& \&\\
-\colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
+\colsnd \q \dcol{ (\tS).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
 \end{tikzcd}
 \]
 \ \\
@@ -649,13 +649,13 @@ $\p$ sends:
 $\q$ receives:
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\comsgn \p\q \dcog{ (S).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
+\comsgn \p\q \dcog{ (\tS).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
 \& \&
-\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[lldd, "\upharpoonright_{\q}"]
+\comsgs \p\q {\ } \dcog{ (\tS).} {\coG}\arrow[rr, "?\q\p\tS "]\arrow[lldd, "\upharpoonright_{\q}"]
 \& \&
 \coG\arrow[dd, "\upharpoonright_{\q}"] \\
 \& \& \& \&\\
-\colrcv \p \dcol{ (S).} \colT\dcol{'} \arrow[rrrr, "?\q\p\tS"]\& \& \& \&\colT\dcol{'}
+\colrcv \p \dcol{ (\tS).} \colT\dcol{'} \arrow[rrrr, "?\q\p\tS"]\& \& \& \&\colT\dcol{'}
 \end{tikzcd}
 \]
 %}
@@ -671,8 +671,8 @@ $\q$ receives:
   {\bf Queues and Queue Environments.} $Q$, buffers for asynchronous communication.
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\colsnd \q \dcol{(S).} \colT \arrow[rr, "\text{step}"]\& \&\colT\&\&\\[-5mm]
-Q(\p,\q)=[]\arrow[rr,"\text{enqueue}"] \& \& Q(\p,\q)=[S]\arrow[rr,"\text{dequeue}"] \& \& Q(\p,\q)=[]\\[-5mm]
+\colsnd \q \dcol{(\tS).} \colT \arrow[rr, "\text{step}"]\& \&\colT\&\&\\[-5mm]
+Q(\p,\q)=[]\arrow[rr,"\text{enqueue}"] \& \& Q(\p,\q)=[\tS]\arrow[rr,"\text{dequeue}"] \& \& Q(\p,\q)=[]\\[-5mm]
 \& \& \colrcv \p  \dcol{(S).} \colT{\color{dkolive}'}  \arrow[rr, "\text{step}"]\& \& \colT{\color{dkolive}'}
 \end{tikzcd}
 \]
