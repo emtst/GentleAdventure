@@ -21,10 +21,6 @@
 
   \centering
   \begin{tikzpicture}[commutative diagrams/every diagram]
-    \begin{pgfonlayer}{background}
-      \fill[rounded corners, yellow!20!white] (-0.8,0.5) rectangle (7.5,-3.5);
-    \end{pgfonlayer}
-    
     \node(G0)at (0,0) {$\G$};
     \node(G1)at (3,0) {$\coG$};
     \node(G2)at (6,0) {\small{global trace}};
@@ -56,6 +52,12 @@
 %      (P2) edge[] node[below right] {Certified semantics!} (ZZ)
 %      (OC) edge[] node[above] {Extractable!} (ZZ)
 %      ;
+    \begin{pgfonlayer}{background}
+	    \fill[rounded corners, yellow!20!white] (-0.8,0.5) rectangle (7.5,-3.5);
+	    \node[rounded corners, rectangle, red!20, fill, fit=(G0)(L2), text=red] {Act 3};
+	    \node[rounded corners, rectangle, green!20, fill, fit=(P2)(OC), text=green] {};
+    \end{pgfonlayer}
+    
   \end{tikzpicture}
 
 \end{frame}
@@ -154,6 +156,24 @@ match e with
 | Jump X => if X == d then p_shift d 0 e' else e
 | ...
 end.
+
+Example ex_p_subst:
+p_subst 0 (ping_Alice) (Rec (Jump 1)) = Rec ping_Alice.
+	\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]{Semantics: recursion unrolling}
+	\begin{minted}{coq}
+Definition p_unroll_rec e :=
+match e with
+| Rec e' => p_subst 0 e e'
+| e' => e'
+end.
+
+(* unroll uT. Alice!0. T to Alice!0. uT. Alice!0. T *)
+Example ex_p_unroll_rec:
+p_unroll_rec (Rec (@Send Alice Nat 0 (Jump 0)))
+= @Send Alice Nat 0 (Rec (@Send Alice Nat 0 (Jump 0))).
 	\end{minted}
 \end{frame}
 
@@ -174,13 +194,26 @@ Definition step e := step' (p_unroll e).
     \end{minted}
 \end{frame}
 
+\begin{frame}[fragile]
+    \frametitle{Semantics: step}
+	\begin{minted}{coq}
+Definition event_alice: event interp_type := 
+{| action_type := a_send;
+   from := Bob;
+   to := Alice;
+   payload_type := Nat;
+   payload := 0 |}.
+Example ex_step: step infinite_ping_Alice event_alice
+		= Some infinite_ping_Alice.
+	\end{minted}
+\end{frame}
+
 \subsection{Local Types}
+\begin{frame}{Section intro}
+\end{frame}
 
 \begin{frame}[fragile]
     \frametitle{Local Types}
-    We introduce a typing discipline that associates processes with \textbf{local types}, that 
-characterise their communication behaviour:
-
     \begin{minted}{coq}
 Inductive lty :=
   | l_end
@@ -197,10 +230,12 @@ Inductive lty :=
 Inductive of_lty : proc -> lty -> Prop :=
 | lt_Send    p T k L x :
     of_lty k L -> of_lty (@Send p T x k) (l_send p T L)
-| lt_ReadIO  T k L :
-    (forall x, of_lty (k x) L) -> of_lty (@ReadIO T k) L
 | ...
 .
+
+Example ex_of_lty:
+of_lty infinite_ping_Alice
+(l_rec (l_send Alice Nat (l_jump 0))).
     \end{minted}
 \end{frame}
 

@@ -128,11 +128,11 @@ Fixpoint p_shift n d e :=
   | Rec e => Rec (p_shift n d.+1 e)
   | Recv p T k => Recv p (fun x => p_shift n d (k x))
   | Send p T x k => Send p x (p_shift n d k)
-
   | ReadIO T k => ReadIO (fun x => p_shift n d (k x))
   | WriteIO T x k => WriteIO x (p_shift n d k)
   end.
 
+(* Substitutes (Jump d) with e' in e; if e' contains (Jump n), additionnally shifts them by d *)
 Fixpoint p_subst d e' e :=
   match e with
   | Inact => Inact
@@ -143,6 +143,46 @@ Fixpoint p_subst d e' e :=
   | ReadIO T k => ReadIO (fun x => p_subst d e' (k x))
   | WriteIO T x k => WriteIO x (p_subst d e' k)
   end.
+
+Example ex_p_subst: p_subst 0 (ping_Alice) (Rec (Jump 1)) = Rec ping_Alice.
+auto.
+Qed.
+
+(** *** Labelled State Transition System **)
+
+(** We define the steps as functions that take a process, an action, and
+attepmpts to run it, returning the continuation. Since we only care about
+communication, we define a function that exposes the firsst communication
+action: [p_unroll]. This function requires two parameters, [readIO : forall T :
+type, unit -> interp_type T] and [writeIO : forall T, T -> unit]. We will use
+these functions later for code extraction. **)
+
+(** begin details: **)
+Variable readIO : forall {T}, unit -> interp_type T.
+Variable writeIO : forall {T}, interp_type T -> unit.
+
+Fixpoint run_IO_prefix e :=
+  match e with
+  | ReadIO T k => run_IO_prefix (k (readIO tt))
+  | WriteIO T x k => run_IO_prefix k
+  | _ => e
+  end.
+
+Definition p_unroll_rec e :=
+  match e with
+  | Rec e' => p_subst 0 e e'
+  | e' => e'
+  end.
+
+Example ex_p_unroll_rec: p_unroll_rec (Rec (@Send Alice Nat 0 (Jump 0))) = @Send Alice Nat 0 (Rec (@Send Alice Nat 0 (Jump 0))).
+unfold p_unroll_rec.
+auto.
+Qed.
+
+Definition p_unroll e :=
+  run_IO_prefix (p_unroll_rec (run_IO_prefix e)).
+(** end details **)
+
 
 (* end hide *)
 
@@ -211,35 +251,6 @@ CoFixpoint trace_map {A B : Type} (f : A -> B) (trc : trace A) : trace B :=
 .
 (* end details *)
 
-(** *** Labelled State Transition System **)
-
-(** We define the steps as functions that take a process, an action, and
-attepmpts to run it, returning the continuation. Since we only care about
-communication, we define a function that exposes the firsst communication
-action: [p_unroll]. This function requires two parameters, [readIO : forall T :
-type, unit -> interp_type T] and [writeIO : forall T, T -> unit]. We will use
-these functions later for code extraction. **)
-
-(** begin details: **)
-Variable readIO : forall {T}, unit -> interp_type T.
-Variable writeIO : forall {T}, interp_type T -> unit.
-
-Fixpoint run_IO_prefix e :=
-  match e with
-  | ReadIO T k => run_IO_prefix (k (readIO tt))
-  | WriteIO T x k => run_IO_prefix k
-  | _ => e
-  end.
-
-Definition p_unroll_rec e :=
-  match e with
-  | Rec e' => p_subst 0 e e'
-  | e' => e'
-  end.
-
-Definition p_unroll e :=
-  run_IO_prefix (p_unroll_rec (run_IO_prefix e)).
-(** end details **)
 
 (** Function [step : proc -> rt_event -> option proc] takes a process [e :
 proc], an event [E : rt_event], and checks whether [e] can run event [E], and
@@ -265,6 +276,11 @@ Definition step' e E :=
   end.
 
 Definition step e := step' (p_unroll e).
+
+Definition event_alice: event interp_type := {| action_type := a_send; from := Bob; to := Alice; payload_type := Nat; payload := 0 |}.
+Example ex_step: step infinite_ping_Alice event_alice = Some infinite_ping_Alice.
+auto.
+Qed.
 
 Definition R_trace := rt_trace -> proc -> Prop.
 Inductive proc_lts_ p (G : R_trace) : R_trace :=
@@ -320,6 +336,13 @@ Inductive of_lty : proc -> lty -> Prop :=
 | lt_ReadIO  T k L     : (forall x, of_lty (k x) L) -> of_lty (@ReadIO T k)    L
 | lt_WriteIO T k L x   : of_lty k L                 -> of_lty (@WriteIO T x k) L
 .
+
+Example ex_of_lty:
+of_lty infinite_ping_Alice (l_rec (l_send Alice Nat (l_jump 0))).
+apply lt_Rec.
+apply lt_Send.
+apply lt_Jump.
+Qed.
 
 (* begin hide *)
 Arguments lt_Rec [k L].
@@ -397,6 +420,12 @@ Example Alice_by_construction : AZooid :=
 
 Goal projT1 Alice_by_construction = AliceLT.
     by reflexivity.
+Qed.
+
+Definition infinite_alice_by_construction :=
+  z_Rec (z_Send Alice Nat 0 (z_Jump 0)).
+Example ex_construction: projT1 (existT _ _ infinite_alice_by_construction) = (l_rec (l_send Alice Nat (l_jump 0))).
+auto.
 Qed.
 
 (** ** Preservation **)
@@ -566,6 +595,10 @@ Proof.
   move: (unroll_preserves_type _ _ H)=>{}H e'.
   move: (p_unroll e) (l_unroll L) H =>{}e {}L; case=>//=.
   { (* Case Send *)
+    move=> p T k L0 x OfLty.
+    case: ifP=>// H.
+    intro.
+    exists L0.
     admit.
   }
   { (* Case Recv *)
