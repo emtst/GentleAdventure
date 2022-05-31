@@ -233,15 +233,17 @@
 \titlegraphic{%
   \begin{picture}(382,0)
     {
-      \put(150,22){\includegraphics[width=3cm]{imperial_logo.pdf}}
-      \put(260,10){\includegraphics[width=2.5cm]{Uok_Logo_RGB294.jpg}}
+      \put(00,22){\includegraphics[width=3cm]{imperial_logo.pdf}}
+      \put(140,10){\includegraphics[width=2.5cm]{Uok_Logo_RGB294.jpg}}
+      \put(280,10){\includegraphics[width=3cm]{logo-large-london.jpg}}
     }
   \end{picture}
   }
 
-\title{A Gentle Adventure Mechanising Message Passing Concurrency Systems}
-\subtitle{Formalising the Metatheory for smol-Zooid}
-\author{David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, and Nobuko Yoshida}
+\title{Coq-Metatheory for smolZooid}
+\subtitle{A Gentle Adventure Mechanising Message Passing Concurrency Systems}
+
+\author{David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, Martin Vassor, and Nobuko Yoshida}
 \institute{}
 \date{}
 % \date{%\put(0,-60){
@@ -347,10 +349,10 @@
 
 
 
-\begin{frame}{Introducing the Metatheory of smol-Zooid Types}
+\begin{frame}{Introducing the Metatheory of smolZooid Types}
 
 \begin{small}
-Simple, but significant multiparty session type metatheory!
+%Simple, but significant multiparty session type metatheory!
 
 
 \begin{figure}
@@ -387,7 +389,8 @@ Simple, but significant multiparty session type metatheory!
 
 
 \ \\ %\ \\
-Embark on our Gentle Adventure!!! https://github.com/emtst/GentleAdventure
+%Embark on our Gentle Adventure!!!
+\url{https://github.com/emtst/GentleAdventure/act3}
 \end{small}
 \end{frame}
 
@@ -531,7 +534,10 @@ Embark on our Gentle Adventure!!! https://github.com/emtst/GentleAdventure
 
 
 \begin{frame}{Abandoning Inductive Datatypes}
- \begin{small}
+  \begin{columns}
+    \begin{column}{0.7\textwidth}
+%\begin{footnotesize}
+  \begin{small}
   \begin{theorem}[Unravelling preserves projections]
     Given $\G$, $\lT$, $\coG$ and $\colT$, such that $(a)$ $\projt{\G} \pr = \lT\ $, $(b)$ $\gunroll \G \coG$, and $(c)$ $\lunroll \lT \colT$,
 then $\coproj \pr \coG \colT$.
@@ -567,8 +573,24 @@ then $\coproj \pr \coG \colT$.
         \begin{proof}
           By coinduction. :)
         \end{proof}
- \end{small}
+  \end{small}
+    \end{column}
+
+    \begin{column}{0.3\textwidth}
+
+\begin{center}
+
+\visible<2->{$\longrightarrow$ Coq!}
+
+  \end{center}
+
+    \end{column}
+  \end{columns}
+
+
  \blfootnote{\scriptsize The Paco Library for Coq: https://plv.mpi-sws.org/paco/ }
+
+
 \end{frame}
 
 \begin{frame}{Type Semantics for Zooid}
