@@ -233,9 +233,18 @@
 \titlegraphic{%
   \begin{picture}(382,0)
     {
-      \put(120,22){\includegraphics[width=3cm]{imperial_logo.pdf}}
-      \put(200,10){\includegraphics[width=2.5cm]{Uok_Logo_RGB294.jpg}}
-      \put(280,10){\includegraphics[width=3cm]{logo-large-london.jpg}}
+      \put(140,10){\includegraphics[width=2.4cm]{imperial_logo.pdf}}
+      \put(220,00){\includegraphics[width=2.0cm]{Uok_Logo_RGB294.jpg}}
+      \put(300,00){\includegraphics[width=2.4cm]{logo-large-london.jpg}}
+      \put(-10,15){
+    \begin{footnotesize}
+      $
+      \begin{array}{l}
+        \text{DisCoTec 2022}\\ \text{Lucca, 13-06-2022}
+      \end{array}
+      $
+    \end{footnotesize}
+}
     }
   \end{picture}
   }
@@ -243,9 +252,11 @@
 \title{Coq-Metatheory for Smol-Zooid}
 \subtitle{A Gentle Adventure Mechanising Message Passing Concurrency Systems, Act 3}
 
-\author{\footnotesize David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, Martin Vassor, and Nobuko Yoshida}
+\author{\scriptsize David Castro-Perez, Francisco Ferreira, \textbf{Lorenzo Gheri}, Martin Vassor, and Nobuko Yoshida}
 \institute{}
-\date{\footnotesize DisCoTec, 13-06-2022}
+\date{}
+%\date{}
+
 % \date{%\put(0,-60){
 %   17-05-2021
 % %}
@@ -725,13 +736,13 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\comsgn \p\q \dcog{ (S).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
+\comsgn \p\q \dcog{ (\tS).} \coG \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\p}"]
 \& \&
-\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[rrdd, "\upharpoonright_{\p}"]
+\comsgs \p\q {\ } \dcog{ (\tS).} {\coG}\arrow[rrdd, "\upharpoonright_{\p}"]
 \& \&
 \\
 \& \& \& \&\\
-\colsnd \q \dcol{ (S).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
+\colsnd \q \dcol{ (\tS).} \colT \arrow[rrrr, "!\p\q\tS"]\& \& \& \&\colT
 \end{tikzcd}
 \]
 \ \\
@@ -739,12 +750,12 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 %\visible<2->{
 \[
 \begin{tikzcd}[ampersand replacement=\&]
-\comsgn \p\q \dcog{ (S).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
+\comsgn \p\q \dcog{ (\tS).} {\coG} \arrow[rr, "!\p\q\tS "]\arrow[dd,"\upharpoonright_{\q}"]
 \& \&
-\comsgs \p\q {\ } \dcog{ (S).} {\coG}\arrow[lldd, "\upharpoonright_{\q}"]
+\comsgs \p\q {\ } \dcog{ (\tS).} {\coG}\arrow[lldd, "\upharpoonright_{\q}"]
 \\
 \& \& \\
-\colrcv \p \dcol{ (S).} \colT\dcol{'} \&\&
+\colrcv \p \dcol{ (\tS).} \colT\dcol{'} \&\&
 \end{tikzcd}
 \]
 
@@ -762,31 +773,31 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 \end{columns}
 \end{frame}
 
-\begin{frame}{You Suffer, but Why?}
+\begin{frame}{You Suffer...}
 
   \begin{small}
-
     \begin{itemize}
-    \item Formal proofs are not easy! (But useful and fun!)
+    \item Formal proofs are not easy. %! %(But useful and fun!)
     \item Proof design is the key.
-    \item Proof techniques are to be taken seriously: (co)induction, functions VS relations...
+    \item Proof techniques are to be taken seriously: (co)induction, functions VS relations, treatment of bindings...
     \end{itemize}
 
+
   \end{small}
 
-  \begin{small}
-    \textcolor{violet}{Check out our material!}
-  \end{small}
+  %% \begin{small}
+  %%   \textcolor{violet}{Check out our material!}
+  %% \end{small}
 
   \begin{footnotesize}
     \begin{itemize}
 
     \item[$\rightarrow$] D. Castro-Perez, F. Ferreira, L. Gheri, and N. Yoshida.  \emph{''Zooid: a DSL for certified multiparty computation: from mechanised metatheory to certified multiparty processes''}. PLDI 2021. \\
-      DOI: https://doi.org/10.1145/3453483.3454041 \\
-  website: http://mrg.doc.ic.ac.uk/publications/zooid-paper/
+      DOI: \url{https://doi.org/10.1145/3453483.3454041} \\
+  website: \url{http://mrg.doc.ic.ac.uk/publications/zooid-paper/}
 
 
-\item[$\rightarrow$]This tutorial is available at https://github.com/emtst/GentleAdventure
+\item[$\rightarrow$]This tutorial is available at \url{https://github.com/emtst/GentleAdventure}
   \end{itemize}
 \end{footnotesize}
 
@@ -802,6 +813,40 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 
 %%}
 \end{frame}
+
+\begin{frame}{... but Why?}
+
+  \begin{footnotesize}
+    Formal proofs are not easy... \visible<2->{\textcolor{violet}{but useful and fun!}\\
+    As witnessed, e.g., by the popular POPLMark Challenge}
+  \end{footnotesize}
+
+
+\begin{center}
+  \visible<3->{\textcolor{violet}{Towards a \bf{Concurrent Benchmark}}}\\
+  \visible<4->{\textcolor{violet}{\small For the mechanisation of process calculi and behavioural types}}
+\end{center}
+
+\visible<4->{\begin{small}
+\begin{block}{Challenges:}
+
+    \begin{itemize}
+    \item name passing and scope extrusion
+    \item linearity and behavioural type systems
+    \item coinduction and reasoning about process algebras
+    \end{itemize}
+\end{block}
+\end{small}}
+
+
+
+
+
+\end{frame}
+
+
+
+
 
 
 \begin{frame}{The Future is Unwritten... But Sketched!}
@@ -832,21 +877,29 @@ if and only if $\ \llts t (\dcol{E},Q)\ $.
 %% \end{footnotesize}
 
   \begin{columns}
-    \begin{column}{0.6\textwidth}
+    \begin{column}{0.4\textwidth}
       \begin{center}
-        \vspace{-5mm}
-        \includegraphics[width=0.8\textwidth]{benchmark.jpeg}
+        %\vspace{-5mm}
+        \includegraphics[width=\textwidth]{benchmark.jpeg}
       \end{center}
     \end{column}
-    \begin{column}{0.4\textwidth}
-      %% \begin{small}
-
-      %% \end{small}
+    \begin{column}{0.6\textwidth}
+      \begin{footnotesize}
+        \hspace*{-5cm}\begin{itemize}
+        \item Concurrent Benchmark website: \url{https://concurrentbenchmark.github.io/}
+        \item[$\rightarrow$] A form! And then a mailing list, online meetings...
+        \item[$\rightarrow$] First goal: write a community paper!
+        \item This tutorial:\\ \url{https://github.com/emtst/GentleAdventure}
+        \end{itemize}
+      \end{footnotesize}
       %% \ \\
-      \textcolor{violet}{Join us!}
-      \\ \ \\
+      %\textcolor{violet}{Join us!}
+      %\\
+      \ \\ \ \\
       \visible<2>{
-        \textcolor{violet}{And... \bf{THANK YOU!}}
+        \begin{center}
+          \textcolor{violet}{\bf{THANK YOU!}}
+          \end{center}
       }
     \end{column}
   \end{columns}
