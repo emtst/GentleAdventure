@@ -53,9 +53,13 @@
 %      (OC) edge[] node[above] {Extractable!} (ZZ)
 %      ;
     \begin{pgfonlayer}{background}
-	    \fill[rounded corners, yellow!20!white] (-0.8,0.5) rectangle (7.5,-3.5);
-	    \node[rounded corners, rectangle, red!20, fill, fit=(G0)(L2), text=red] {Act 3};
-	    \node[rounded corners, rectangle, green!20, fill, fit=(P2)(OC), text=green] {};
+	    % We cheat a bit here: the green part is actually not transparent, 
+	    % which allows us to "merge" both rectangles, the consequence is 
+	    % that it has to be drawn first.
+	    \node[rounded corners, rectangle, green!20!white, fill, fit=(P2)(OC), text=green] {};
+	    \node[rounded corners, rectangle, green!20!white, fill, fit=(P0)(L0), text=green] {};
+	    \fill[rounded corners, yellow, opacity=0.2] (-0.8,0.5) rectangle (7.5,-3.5);
+	    \node[rounded corners, rectangle, red, opacity=0.2, fill, fit=(G0)(L2), text=red] {Act 3};
     \end{pgfonlayer}
     
   \end{tikzpicture}
@@ -68,9 +72,15 @@
     \begin{itemize}
     \item We combine \textbf{shallow/deep embeddings} of binders
     \begin{itemize}
+    \item Processes are defined inductively
+    \item Values are standard Gallina values
     \item We use DeBruijn indices for the deeply embedded binders
     \end{itemize}
     \item SZooid constructs are \textbf{well-typed by construction}
+    \end{itemize}
+    \end{greenbox}
+    \begin{greenbox}{}
+    \begin{itemize}
     \item We leverage \textbf{Coq code extraction} mechanism
     \item For simplicity, SZooid does not cover \emph{choices}
     \end{itemize}
@@ -87,10 +97,7 @@ Inductive proc :=
 | Send (p : participant) {T : type}
      (x : interp_type T) (k : proc)
 | Recv (p : participant) {T : type}
-    (k : interp_type T -> proc)
-
-| ReadIO {T : type} (k : interp_type T -> proc)
-| WriteIO {T : type} (x : interp_type T) (k : proc).
+    (k : interp_type T -> proc).
     \end{minted}    
 \end{frame}
 
@@ -110,6 +117,14 @@ Definition interp_type : type -> Type := ...
 
 \subsection{Traces}
 
+\begin{frame}{Semantics: overview}
+	\[P\xrightarrow{E} P^\prime\]
+	\vspace{1cm}
+	\begin{itemize}
+		\item What is an event?
+		\item How to manage recursion?
+	\end{itemize}
+\end{frame}
 
 \begin{frame}[fragile]
     \frametitle{Semantics: events}
@@ -127,28 +142,24 @@ Record event interp_payload :=
     subj         : participant;
     party        : participant;
     payload_type : type;
-    payload      : interp_payload payload_type
-  }.
+    payload      : interp_payload payload_type }.
     \end{minted}
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Semantics: Recursion Variables and I/O}
-    \verb|p_unroll : proc -> proc| 
-\vspace{.2cm}
-
-\verb|p_unroll| exposes the first communication action in a process:
-\begin{itemize}
-\item ``runs'' any I/O action
-\item unfolds recursion
-\end{itemize}
+    \frametitle{Semantics: Recursion Variables}
+\verb|p_unroll| exposes the first communication action in a process (unfold recursion):
 \vspace{1cm}
     \begin{minted}{coq}
-Definition p_unroll : proc -> proc := ...
+Definition p_unroll e := 
+match e with
+| Rec e' => p_subst 0 e e'
+| e' => e'
+end.
     \end{minted}
 \end{frame}
 
-\begin{frame}[fragile]{Semantics: recursion unrolling}
+\begin{frame}[fragile]{Semantics: Recursion Variables}
 	\begin{minted}{coq}
 Fixpoint p_subst d e' e :=
 match e with
@@ -164,15 +175,9 @@ p_subst 0 (ping_Alice) (Rec (Jump 1)) = Rec ping_Alice.
 
 \begin{frame}[fragile]{Semantics: recursion unrolling}
 	\begin{minted}{coq}
-Definition p_unroll_rec e :=
-match e with
-| Rec e' => p_subst 0 e e'
-| e' => e'
-end.
-
 (* unroll uT. Alice!0. T to Alice!0. uT. Alice!0. T *)
-Example ex_p_unroll_rec:
-p_unroll_rec (Rec (@Send Alice Nat 0 (Jump 0)))
+Example ex_p_unroll:
+p_unroll (Rec (@Send Alice Nat 0 (Jump 0)))
 = @Send Alice Nat 0 (Rec (@Send Alice Nat 0 (Jump 0))).
 	\end{minted}
 \end{frame}
@@ -209,7 +214,12 @@ Example ex_step: step infinite_ping_Alice event_alice
 \end{frame}
 
 \subsection{Local Types}
-\begin{frame}{Section intro}
+\begin{frame}{Local Types}
+	\begin{itemize}
+		\item Local types for processes
+		\item Notion of ``Being well-typed''
+		\item Simultaneous construction of processes \& well-typeness proof
+	\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -240,7 +250,7 @@ of_lty infinite_ping_Alice
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Smol Zooid: Smart Constructors (I)}
+    \frametitle{Smol Zooid: Smart Constructors}
     \begin{sticky}
 \vspace{-.5cm}
     \begin{itemize}
@@ -255,7 +265,7 @@ well-typed processes by construction, avoiding repetition.
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Smol Zooid: Smart Constructors (and II)}
+    \frametitle{Smol Zooid: Smart Constructors}
 \begin{minted}{coq}
 Definition SZooid L := { p | of_lty p L}.
 
@@ -266,10 +276,35 @@ Definition z_Send  p T x L (k : SZooid L)
 \end{minted}
 \end{frame}
 
+\begin{frame}[fragile]{Smol Zooid: Smart Constructors}
+\begin{minted}{coq}
+Example Alice_smart_constructor :=
+	z_Rec (z_Send Bob Nat 42 (z_Jump 0)).
+(*
+Alice_smart_constructor:
+	SZooid (l_rec (l_send Bob Nat (l_jump 0)))
+*)
+\end{minted}
+\end{frame}
+
+
+\begin{frame}{Conclusion}
+	\begin{enumerate}
+		\item Define processes and local types
+		\item Semantics of processes
+		\item Automatic construction of local types
+	\end{enumerate}
+	\begin{itemize}
+		\item We also have {\it code extraction}
+		\item and {\it subject reduction}
+	\end{itemize}
+\end{frame}
+
+
 \begin{frame}[fragile]
-    \frametitle{Inferring Local Types}
-    SZooid constructs fully determine their types from their inputs, so we can ask Coq to \emph{infer} local types
-associated with SZooid terms:
+    \frametitle{Automated well-typedness}
+    SZooid constructs fully determine their types from their inputs, so we can
+    ask Coq to derive local types associated with SZooid terms:
 \vspace{1cm}
 \begin{minted}{coq}
 Definition AZooid := { L & SZooid L }.
@@ -278,7 +313,7 @@ Definition AZooid := { L & SZooid L }.
 
 \subsection{Subject Reduction}
 
-\begin{frame}[fragile]
+\begin{frame}[fragile, noframenumbering]
 \frametitle{Subject Reduction}
 \begin{minted}{coq}
 Theorem preservation (e : proc) (L : lty) 
@@ -292,7 +327,7 @@ Theorem preservation (e : proc) (L : lty)
 
 \subsection{Extraction}
 
-\begin{frame}[fragile]
+\begin{frame}[fragile, noframenumbering]
 \frametitle{Extraction}
 \begin{itemize}
 \item We convert \verb|proc| to function calls in an \textbf{ambient monad}
@@ -306,7 +341,7 @@ transport
 \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]
+\begin{frame}[fragile, noframenumbering]
 \frametitle{Extraction Module}
 \begin{minted}{coq}
 Module ProcExtraction (MP : ProcessMonad).
@@ -320,7 +355,7 @@ End ProcExtraction.
 \end{minted}
 \end{frame}
 
-\begin{frame}[fragile]
+\begin{frame}[fragile, noframenumbering]
 \frametitle{Example Extraction}
 \begin{minted}{coq}
 Module  ALICE (MP : ProcessMonad) : PROCESS(MP).
@@ -333,7 +368,7 @@ Extraction ALICE.
 \end{minted}
 \end{frame}
 
-\begin{frame}[fragile]
+\begin{frame}[fragile, noframenumbering]
 \frametitle{Summary}
 \begin{sticky}
 \begin{itemize}
