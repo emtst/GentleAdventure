@@ -1,0 +1,492 @@
+%% typo David: slide 12/18, the prime is red on top, black on bottom
+
+\section{Binary Session Types}
+
+\subsection{Original System}
+
+\begin{frame}
+\begin{sticky}
+\Large
+Mechanising the \textbf{Honda, Vasconcelos and Kubo's binary session type
+system~}
+\end{sticky}
+\small
+\bibentry{Honda:1998}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Processes: Key Features}
+  \begin{displaymath}
+    \begin{array}{rclr}
+     \dproc{P}, \dproc{Q},\dproc{R} & \bnfas & & \\
+     % & \bnfalt & \preq a k P & \text{session request}\\
+     % & \bnfalt & \pacc a k P & \text{session accept}\\
+     & \bnfalt & \psend k e P & \text{data sending}\\
+     & \bnfalt & \precv k {\tikzmark{expBinder}x} P & \text{data receiving}\\
+     % & \bnfalt & \psel k m P & \text{label selection}\\
+     % & \bnfalt & \pbran k P Q & \text{label branching}\\
+     & \bnfalt & \pthrow k {k'} P & \text{channel sending}\\
+     & \bnfalt & \pcatch k {\tikzmark{recvChan}k'} P & \text{channel receive}\\
+     % & \bnfalt & \pif e P Q & \text{conditional branch}\\
+     & \bnfalt & \ppar P Q & \text{parallel composition}\\
+     % & \bnfalt & \pinact & \text{inaction}\\
+     % & \bnfalt & \phidenm a P & \text{name hiding}\\
+     & \bnfalt & \phidech {\tikzmark{chanBinder}k} P & \text{channel hiding} \\
+    & \bnfalt & \multicolumn{2}{l}{\cdots}
+    \end{array}
+  \end{displaymath}
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=orange,fill=orange!30,rounded corners,text width=3cm},
+  arrow/.style={red!80!black,ultra thick,->,>=latex}
+]
+\fill<2>[fill=blue, opacity=0.1] ([yshift=0.4cm, xshift=-0.1cm]{pic cs:expBinder}) rectangle ([xshift=0.4cm, yshift=-.2cm]{pic cs:expBinder});
+
+\fill<2>[fill=blue, opacity=0.1] ([yshift=0.4cm, xshift=-0.1cm]{pic cs:recvChan}) rectangle ([xshift=0.4cm, yshift=-.2cm]{pic cs:recvChan});
+\fill<2>[fill=blue, opacity=0.1] ([yshift=0.4cm, xshift=-0.1cm]{pic cs:chanBinder}) rectangle ([xshift=0.4cm, yshift=-.2cm]{pic cs:chanBinder});
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Binder Mechanisation: DeBruijn Indices}
+\begin{sticky}
+Terms \hspace{1cm} $\dexp{M}, \dexp{N} \Coloneqq \tikzmark{dbrj}\dexp{n} \bnfalt \dexp{M} \eapp \dexp{N} \bnfalt \elam{\dexp{M}}$
+\end{sticky}
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=none,fill=LightBlue, text opacity=0.7, fill opacity=0.3,rounded corners},
+  arrow/.style={LightBlue,opacity=1, thick,->,>=latex}
+]
+\node<2>[expl]
+  (ptdex)
+  at (8,2.6cm)
+  {\scriptsize Natural number};
+\draw<2>[arrow]
+  ([xshift=4.3ex, yshift=0.1ex]{pic cs:dbrj}) to (ptdex.south);
+\end{tikzpicture}
+\uncover<3>{%
+\begin{displaymath}
+% \lambda f. (\lambda x. f (x x)) (\lambda x. f (x x))
+% \lambda. (\lambda. 1 (0 0)) (\lambda 1 (0 0))
+% \lambda y. (\lambda x. x) (\lambda z. z y)
+% lambda (lambda. 0) (lambda. 0 1)
+\tikzmark{lam0}\elam{(\tikzmark{lam1}\elam{\ezero}) \eapp (\tikzmark{lam2}\elam{\ezero \eapp \eone})}
+\end{displaymath}
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=none,fill=LightBlue, text opacity=0.7, fill opacity=0.3,rounded corners},
+  arrow/.style={LightBlue,opacity=1, thick,->,>=latex}
+]
+\draw<3->[arrow]
+  ([xshift=2.7ex, yshift=-0.3ex]{pic cs:lam1}) to
+  ([xshift=2.7ex, yshift=-1.7ex]{pic cs:lam1}) to
+  ([xshift=0.7ex, yshift=-1.7ex]{pic cs:lam1}) to
+  ([xshift=0.7ex, yshift=-0.3ex]pic cs:lam1);
+
+\draw<3->[arrow]
+  ([xshift=2.7ex, yshift=-0.3ex]{pic cs:lam2}) to
+  ([xshift=2.7ex, yshift=-1.7ex]{pic cs:lam2}) to
+  ([xshift=0.7ex, yshift=-1.7ex]{pic cs:lam2}) to
+  ([xshift=0.7ex, yshift=-0.3ex]pic cs:lam2);
+
+\draw<3->[arrow]
+  ([xshift=4.4ex, yshift=-0.3ex]{pic cs:lam2}) to
+  ([xshift=4.4ex, yshift=-2.7ex]{pic cs:lam2}) to
+  ([xshift=0.7ex, yshift=-2.7ex]{pic cs:lam0}) to
+  ([xshift=0.7ex, yshift=-0.3ex]pic cs:lam0);
+\end{tikzpicture}
+}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Binder Mechanisation: Locally Nameless}
+\begin{sticky}
+Terms: $\dexp{M}, \dexp{N} \Coloneqq \tikzmark{dbrj}\dexp{n} \bnfalt \tikzmark{frvar}\dexp{x} \bnfalt \dexp{M} \eapp \dexp{N} \bnfalt \elam{\dexp{M}}$
+\end{sticky}
+\begin{tikzpicture}[
+  remember picture,
+  overlay,
+  expl/.style={draw=none,fill=LightBlue, text opacity=0.7, fill opacity=0.3,rounded corners},
+  arrow/.style={LightBlue,opacity=1, thick,->,>=latex}
+]
+\node<1>[expl]
+  (ptdex)
+  at (5,3.6cm)
+  {\scriptsize Natural number};
+\draw<1>[arrow]
+  ([xshift=0.3ex, yshift=1.2ex]{pic cs:dbrj}) to (ptdex.south);
+
+\node<1>[expl]
+  (fvarexp)
+  at (10,3.6cm)
+  {\scriptsize Name that represents a free variable};
+\draw<1>[arrow]
+  ([xshift=0.7ex,yshift=1.2ex]{pic cs:frvar}) to (fvarexp.south);
+\end{tikzpicture}
+\uncover<2->{%
+\scriptsize
+\begin{minipage}{0.4\textwidth}
+\begin{displaymath}
+\begin{array}{c l}
+\dexp{M}^{\dexp{x}} \equiv \{\dexp{0} \rightarrow \dexp{x}\}\dexp{M} & \text{Open a term}
+\\[.5cm]
+^{\setminus\dexp{x}}\dexp{M} \equiv \{\dexp{0} \leftarrow \dexp{x}\}\dexp{M} & \text{Close a term}
+\\[.5cm]
+\mathsf{lc}(\dexp{M})  & \text{Locally closed term}
+\end{array}
+\end{displaymath}
+\end{minipage}
+\begin{minipage}{0.55\textwidth}
+\begin{displaymath}
+\begin{array}{c}
+\inferrule{\Gamma(\dexp{x}) = \dte{T}}{\Gamma \vdash \dexp{x} : \dte{T}}
+\hspace{1cm}
+\inferrule{\forall \dexp{x} \notin L \\ \Gamma, \dexp{x} : \dte{S} \vdash \dexp{M}^{\dexp{x}} : \dte{T}}{\Gamma \vdash \elam{\dexp{M}} : \dte{S \to T}}
+\\[1cm]
+\inferrule{\Gamma \vdash \dexp{M} : \dte{S \to T} \\ \Gamma \vdash \dexp{N} : \dte{S}}{\Gamma \vdash \dexp{M}\eapp\dexp{N} : \dte{T}}
+\end{array}
+\end{displaymath}
+\end{minipage}
+}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Process Mechanisation}
+\scriptsize
+\begin{minipage}{0.4\textwidth}
+\begin{sticky}
+\vspace{-.5cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Inductive name : Set :=
+  | fnm : atom -> name
+  | bnm : nat -> name
+.
+
+Definition channel := name.
+
+Inductive proc : Set :=
+| send : channel -> exp -> proc -> proc
+| receive : channel -> proc -> proc
+
+| throw : channel -> channel -> proc -> proc
+| catch : channel -> proc -> proc
+
+| nu_ch : proc -> proc (* hides a channel *)
+...
+\end{lstlisting}
+\vspace{-.5cm}
+\end{sticky}
+\end{minipage}
+\hspace{.5cm}
+\begin{minipage}{0.55\textwidth}
+\begin{sticky}
+\vspace{-.5cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Inductive lc : proc -> Prop :=
+| lc_send : forall k e P,
+    lc_nm k ->
+    lc_exp e ->
+    lc P ->
+    lc (send k e P)
+
+| lc_receive : forall (L : seq atom) k P,
+    lc_nm k ->
+    (forall x, x \notin L -> lc (open P x)) ->
+    lc (receive k P)
+
+
+| lc_throw : forall k k' P,
+    lc_nm k -> lc_nm k' ->
+    lc P ->
+    lc (throw k k' P)
+
+| lc_catch : forall (L : seq atom) k P,
+    lc_nm k ->
+    (forall x, x \notin L -> lc (open P x)) ->
+    lc (catch k P)
+...
+\end{lstlisting}
+\vspace{-.5cm}
+\end{sticky}
+\end{minipage}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Semantics (Excerpt as in Paper)}
+\begin{displaymath}
+  \arraycolsep=1.4pt\def\arraystretch{1.3}
+  \begin{array}{r@{\hspace{.5cm}}c}
+
+    \rulename{r-pass} & \pred {\ppar {\pthrow k {k'} P}{\pcatch k {k'} Q}} {\ppar P {Q}}\\
+
+
+    \rulename{r-com} & \pred {\ppar {\psend k e P}{\precv{k}{x}{Q}}} {\ppar P {\{\dexp{x} \to \dexp{e}\}Q}}\\
+
+     \rulename{r-cong} & \dproc{P}\equiv\dproc{P'} \text{and}\ \pred {P'} {Q'}
+                           \text{and}\ \dproc{Q'}\equiv\dproc{Q}
+                           \Rightarrow \pred P Q\\
+
+     \rulename{r-scop} & % \forall {\vch k} \notin L \quad
+                           \pred {P} {Q}
+                           \Rightarrow \pred {\phidech{k}{P}} {\phidech{k}{Q}} \\
+
+     \rulename{r-par} & \pred P {P'} \Rightarrow \pred {\ppar P Q} {\ppar {P'} Q}\\
+%
+%    \rulename{r-if-tt} & \pred {\pif \ett P Q} P\\
+%
+%     \rulename{r-if-ff} & \pred {\pif \eff P Q} Q\\
+  \end{array}
+\end{displaymath}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Mechanising the Semantics}
+Using Locally Nameless, $\alpha$-equivalent terms are \textbf{syntactically equal}
+
+\vspace{.5cm}
+
+How do we mechanise \rulename{r-pass}?
+\begin{sticky}
+\pred {\ppar {\pthrow k {k'} P}{\pcatch k {k'} Q}} {\ppar P {Q}}
+\end{sticky}
+\vspace{.2cm}
+\uncover<2->{%
+A \only<2>{naive}\only<3>{{\large\alert{WRONG}}} attempt:
+\begin{displaymath}
+\pred {\ppar {\pthrow k {k'} P}{\pcatch{k}{}{Q}}} {\ppar P {Q^{\vch{k'}}}}
+\end{displaymath}
+}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Why is our mechanisation of \rulename{r-pass} wrong?}
+ \begin{displaymath}
+    \begin{array}{lrcl}
+      \text{Type} & \dtp{\alpha}, \dtp{\beta} & \bnfas & \tsende S \alpha \bnfalt
+                                                         \trecve S \alpha \bnfalt
+%                                                         \tsendp \alpha \beta \bnfalt
+%                                                         \trecvp \alpha \beta \bnfalt
+                                                         \tend \bnfalt \tbot\\
+                  % & & \bnfalt & \toffer \alpha \beta \bnfalt \ttake \alpha \beta\\
+      \text{Typing} & \typing{\Delta} & \bnfas & \emptyctx \bnfalt \typc \Delta k \alpha\\[1em]
+    \end{array}
+  \end{displaymath}
+
+\vspace{.2cm}
+\textbf{Subject Reduction}: if $\oftp\Gamma{P}\Delta$ with $\Delta$ balanced, and $\pred{P}{Q}$, then there exists $\Delta'$ s.t. $\oftp\Gamma{Q}\Delta'$, with $\Delta'$ balanced.
+
+\vspace{.2cm}
+\uncover<3>{%
+\begin{redbox}
+  Rule $\pred {\ppar {\pthrow k {k'} P}{\pcatch{k}{}{Q}}} {\ppar P {Q^{\vch{k'}}}}$ \\
+  breaks subject reduction.
+\end{redbox}
+}
+\end{frame}
+
+\begin{frame}
+    \frametitle{The Problem with Equating $\alpha$-equivalent Terms}
+The idea behind \rulename{r-pass}:
+\begin{sticky}
+\small
+$\begin{array}{l}
+\pred {\ppar {\pthrow k {k_0} P}{\pcatch k {k_1} Q}} {\ppar P {Q'}}
+\\\qquad \text{if} \quad \pcatch k {k_1} Q \equiv_\alpha \pcatch k {k_0} Q'
+\end{array}$
+\end{sticky}
+
+\vspace{.5cm}
+\uncover<2->{$\vch{k_0}$ cannot be free in $\dproc{Q}$}
+
+\vspace{.5cm}
+\uncover<3>{%
+\begin{redbox}
+  We used a \textbf{standard} representation of binders, to mechanise a \textbf{non-standard, but correct} use of binders.
+\end{redbox}
+}
+\end{frame}
+
+\subsection{Revised System}
+
+\begin{frame}
+\begin{sticky}
+\Large
+Mechanising the Revised System
+\end{sticky}
+\small
+\bibentry{Yoshida:2007}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Processes, Channels, and Polarities}
+A solution to the naive \rulename{r-pass} is to distinguish \textbf{channel polarities} (\cite{gay2005subtyping})
+\begin{sticky}
+$\vch{p},\vch{q} \Coloneqq \vch{+} \bnfalt \vch{-}$
+
+$\pred {\ppar {\pthrow {k^p} {k'^{q}} P}{\pcatch{k^{\overline{p}}}{}{Q}}} {\ppar P {Q^{\vch{k'^{q}}}}}$
+\end{sticky}
+\vspace{.3cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Inductive channel :=
+| Ch of (kvar * polarity)
+| Var of cvar.
+
+Inductive proc : Set :=
+| send : channel -> exp -> proc -> proc
+| receive : channel -> proc -> proc
+
+| throw : channel -> channel -> proc -> proc
+| catch : channel -> proc -> proc
+
+| nu_ch : proc -> proc
+...
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Atoms: Separating Namespaces}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Module CA := AtomScope Atom.Atom. (* Module of the atoms for channels *)
+Module KA := AtomScope Atom.Atom. (* Module of the atoms for channel name *)
+Module EA := AtomScope Atom.Atom. (* Module of the atoms for expressions *)
+
+Notation cvar := (CA.var).
+Notation kvar := (KA.var).
+Notation evar := (EA.var).
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Typing}
+
+\begin{minipage}{.38\textwidth}
+{\scriptsize
+ \begin{displaymath}
+    \begin{array}{lrcl}
+      \text{Type} & \dtp{\alpha}, \dtp{\beta} & \bnfas & \tsende S \alpha \bnfalt
+                                                         \trecve S \alpha \bnfalt
+%                                                         \tsendp \alpha \beta \bnfalt
+                                                         %\trecvp \alpha \beta \bnfalt
+                                                         \tend \bnfalt \ldots \\
+      % \text{Typing} & \typing{\Delta} & \bnfas & \emptyctx \bnfalt \typc \Delta k \alpha\\[1em]
+    \end{array}
+  \end{displaymath}
+}
+\begin{sticky}
+\vspace{-.7cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Inductive tp : Set :=
+  | input : sort -> tp -> tp
+  | output : sort -> tp -> tp
+  | ended : tp
+  | ...
+\end{lstlisting}
+\end{sticky}
+\end{minipage}
+\begin{minipage}{.55\textwidth}
+{\scriptsize
+ \begin{displaymath}
+    \begin{array}{lrcl}
+%      \text{Type} & \dtp{\alpha}, \dtp{\beta} & \bnfas & \tsende S \alpha \bnfalt
+%                                                         \trecve S \alpha \bnfalt
+%                                                         \tsendp \alpha \beta \bnfalt
+%                                                         \trecvp \alpha \beta \bnfalt
+%                                                         \tend \bnfalt \ldots \\
+      \text{Typing} & \typing{\Delta} & \bnfas & \emptyctx \bnfalt \typc \Delta k \alpha\\[1em]
+      \text{Judgement} & & & \typing{\Gamma} \vdash \dproc{P} : \typing{\Delta} \\[1em]
+    \end{array}
+  \end{displaymath}
+}
+\begin{sticky}
+\vspace{-.8cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Inductive oft : sort_env -> proc -> tp_env -> Prop :=
+| t_send : forall G kt e P D S T,
+    oft_exp G e S ->
+    oft G P (add kt T D) ->
+    oft G (send (chan_of_entry kt) e P) (add kt (output S T) D)
+| ...
+\end{lstlisting}
+\vspace{-.2cm}
+\end{sticky}
+\end{minipage}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Linear Environments}
+
+$\typing{\Delta} \bnfas \emptyctx \bnfalt \typc \Delta k \alpha$
+
+\begin{sticky}
+\vspace{-1cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+  Inductive env := Undef | Def of {finMap K -> V}.
+
+  Definition add x t E :=
+    if x \in dom E then Undef else upd x t E.
+\end{lstlisting}
+\vspace{-.3cm}
+\end{sticky}
+
+We defined operations on environments that contain \textbf{linear} channels.
+
+\vspace{.5cm}
+
+Adding a channel that is already in the environment results in an \textbf{undefined} environment.
+
+\vspace{.5cm}
+
+We use this fact pervasively in our mechanised proofs.
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Subject Reduction}
+
+\begin{sticky}
+\vspace{-1cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Theorem SubjectReductionStep G P Q D:
+  oft G P D -> P --> Q -> exists D', D $\rightsquigarrow$ D' /\ oft G Q D'.
+\end{lstlisting}
+\vspace{-.3cm}
+\end{sticky}
+
+\begin{sticky}
+\vspace{-1cm}
+\begin{lstlisting}[language=Coq,basicstyle=\fontsize{6}{7}\selectfont]
+Theorem SubjectReduction G P Q D:
+  oft G P D -> P -->* Q -> exists D', oft G Q D'.
+\end{lstlisting}
+\vspace{-.3cm}
+\end{sticky}
+
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Mechanising a Proof of Subject Reduction}
+
+Using separate namespaces requires us to prove distinct \textbf{substitution lemmas} for every different kind of binder (expression, channel, shared channel).
+
+\vspace{.3cm}
+
+Separate namespaces helps us avoid errors (e.g. using a channel instead of an expression), and simplifies proofs.
+
+\vspace{.3cm}
+
+Linear environments allow us to make simplifying assumptions about \emph{defined} environments.
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Summary of Act I}
+\begin{itemize}
+\item Deep Embedding binders allows us to fully control the calculus.
+\item LN requires a number of theorems and lemmas to prove our basic safety properties.
+\item EMTST (our tool) helps with nominal sets and environments.
+\item Next, we will explore what do we gain if we give up control (using shallow embeddings).
+\end{itemize}
+\end{frame}
