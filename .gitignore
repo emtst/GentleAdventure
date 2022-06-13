@@ -31,3 +31,4 @@ Makefile.conf
 # generated files
 
 *.pdf
+!/DisCoTec22/*.pdf
