@@ -1,0 +1,260 @@
+% Required packages
+
+% \usepackage{proof}
+\usepackage{mathpartir}
+% \usepackage[svgnames]{xcolor}
+
+% symbols
+\usepackage{amsmath}
+\usepackage{amssymb}
+% \usepackage{dsfont}
+% \usepackage{stmaryrd}
+
+
+% \usepackage[normalem]{ulem} % for strikethrough with \sout{}
+\usepackage{cancel}
+
+% useful packages
+
+\usepackage{xspace}
+\usepackage{fancyvrb}
+\VerbatimFootnotes % to enable the use of verbatim in footnotes, it may conflict with some packages
+
+% syntax highlighting
+
+% \usepackage[skins,listings]{tcolorbox}
+\usepackage{listings}
+\definecolor{dkblue}{rgb}{0,0.1,0.5}
+\definecolor{lightblue}{rgb}{0,0.5,0.5}
+\definecolor{dkgreen}{rgb}{0,0.4,0}
+\definecolor{dk2green}{rgb}{0.4,0,0}
+\definecolor{dkviolet}{rgb}{0.6,0,0.8}
+\definecolor{mantra}{rgb}{0.2,0.6,0.2}
+\definecolor{gotcha}{rgb}{0.8,0.2,0}
+\definecolor{ocre}{RGB}{243,102,25} %borrowed to Orange Book
+
+\def\lstlanguagefiles{defManSSR.tex}
+\lstset{language=SSR}
+
+%%% Some macros
+
+% Miscelaneous typesetting
+\newcommand{\code}[1]{\texttt{#1}} % typeset with mono spaced font
+\newcommand{\rulename}[1]{\DefTirName{#1}}
+\newcommand{\fnm}[1]{\ensuremath{\text{#1}}} % the name of a function
+\newcommand{\dbj}{de Bruijn\xspace}
+
+%% Color management
+
+% \newcommand{\NOCOLOR} % define to remove color from the syntax
+
+\ifdefined\NOCOLOR
+  \newcommand{\withcolor}[2]{#2} % no color selsected
+\else
+  % sets and restores the color
+  \newcommand{\withcolor}[2]{\colorlet{currbkp}{.}\color{#1}{#2}\color{currbkp}}
+\fi
+
+% to cancel terms in red instead of black
+\ifdefined\NOCOLOR
+\else
+  \renewcommand{\CancelColor}{\color{red}}
+\fi
+
+% Macros for BNF grammars
+
+\newcommand{\bnfas}{\mathrel{::=}}
+\newcommand{\bnfalt}{\mathrel{\mid}}
+
+% Optional color definitions
+
+% no color
+% \newcommand{\colorch}{black} % color for channel vars
+% \newcommand{\colorex}{black} % color for expresion vars
+% \newcommand{\colorse}{black} % color for session vars
+% \newcommand{\colorlbl}{black} % color for labels
+% \newcommand{\colorproc}{black} % color for processes
+% \newcommand{\colorexp}{black} % color for expressions
+% \newcommand{\colorte}{black} % color for the types of expressions
+% \newcommand{\colortp}{black} % color for the types of processes
+
+% some colors
+\newcommand{\colorch}{DarkGreen} % color for channel vars
+\newcommand{\colorex}{Tomato} % color for expresion vars
+\newcommand{\colorse}{Teal} % color for session vars
+\newcommand{\colorlbl}{Indigo} % color for labels
+\newcommand{\colorproc}{Maroon} % color for processes
+\newcommand{\colorexp}{Tomato} % color for expressions
+\newcommand{\colorte}{DarkOrchid} % color for the types of expressions
+\newcommand{\colortp}{NavyBlue} % color for the types of processes
+
+%% Macros for kinds of vars
+% these are to control the rendering of the different kinds of variables
+\newcommand{\vch}[1]{\withcolor{\colorch}{#1}} % variables for channels
+\newcommand{\vex}[1]{\withcolor{\colorex}{#1}} % variables for expressions
+\newcommand{\vse}[1]{\withcolor{\colorse}{#1}} % variables for sessions
+
+%% Macros for labels
+
+\newcommand{\dlbl}[1]{\withcolor{\colorlbl}{#1}} % just to define possible use of colours
+\newcommand{\lblleft}{\dlbl{\code{l}}}
+\newcommand{\lblright}{\dlbl{\code{r}}}
+% \newcommand{\lblleft}{\dlbl{\code{left}}}
+% \newcommand{\lblright}{\dlbl{\code{right}}}
+
+%% Macros for processes
+
+\newcommand{\openop}[2]{\ensuremath{{#1}^{#2}}} % term name
+\newcommand{\closeop}[2]{^{\backslash #2}\ensuremath{{#1}}} % term name
+
+\newcommand{\dproc}[1]{\withcolor{\colorproc}{#1}} % just to define possible use of colours
+
+\newcommand{\preq}[3]{\dproc{\code{request}\ \vse{#1}\,(\vch{#2}). \dproc{#3}}}
+\newcommand{\pacc}[3]{\dproc{\code{accept}\ \vse{#1}\,(\vch{#2}). \dproc{#3}}}
+\newcommand{\psend}[3]{\dproc{\vch{#1}\,![\dexp{#2}];\,\dproc{#3}}}
+\newcommand{\precv}[3]{\dproc{\vch{#1}\,?(\vex{#2}). \dproc{#3}}}
+\newcommand{\psel}[3]{\dproc{\vch{#1}\triangleleft\dlbl{#2};\dproc{#3}}}
+\newcommand{\pbran}[3]
+  {\dproc{\vch{#1}\triangleright\{\lblleft:\dproc{#2}[\!]\lblright:\dproc{#3}\}}}
+\newcommand{\pthrow}[3]{\dproc{\code{throw}\ \vch{#1}\,[\vch{#2}];\dproc{#3}}}
+\newcommand{\pcatch}[3]{\dproc{\code{catch}\ \vch{#1}\,(\vch{#2}). \dproc{#3}}}
+\newcommand{\pif}[3]
+  {\dproc{\code{if}\ \dexp{#1}\ \code{then}\ \dproc{#2}\ \code{else}\ \dproc{#3}}}
+\newcommand{\ppar}[2]{\dproc{#1}\mathrel{|}\dproc{#2}}
+\newcommand{\pinact}{\dproc{\code{inact}}}
+\newcommand{\phide}[3]{\dproc{\nu_{#1}\,({#2}).\dproc{#3}}}
+\newcommand{\hideboth}{\{n,c\}}
+\newcommand{\phidenm}[2]{\phide{n} {\vse{#1}} {#2}}
+\newcommand{\phidech}[2]{\phide{c} {\vch{#1}} {#2}}
+\newcommand{\pnu}[1]{\ensuremath{{\dproc{\nu.{#1}}}}}
+
+%% Macros for expressions
+
+\newcommand{\dexp}[1]{\withcolor{\colorexp}{#1}} % just to define possible use of colours
+
+\newcommand{\etrue}{\dexp{\code{true}}}
+\newcommand{\efalse}{\dexp{\code{false}}}
+\newcommand{\elam}[1]{\dexp{\lambda.}\,#1}
+\newcommand{\eapp}{\,}
+\newcommand{\ezero}{\dexp{0}}
+\newcommand{\eone}{\dexp{1}}
+\newcommand{\etwo}{\dexp{2}}
+
+\newcommand{\ett}{\ensuremath{\dexp{\texttt{tt}}}}
+\newcommand{\eff}{\ensuremath{\dexp{\texttt{ff}}}}
+\newcommand{\eunit}{\ensuremath{\dexp{()}}}
+
+%% Macros for types
+
+%\newcommand{\dual}[1]{\bar{#1}}
+\newcommand{\dual}[1]{\overline{#1}}
+
+% expressions
+\newcommand{\dte}[1]{\withcolor{\colorte}{#1}} % just to define possible use of colours
+
+\newcommand{\tbool}{\dte{\code{bool}}}
+\newcommand{\tendp}[1]{\dte{\langle\dtp{#1},\dtp{\dual{#1}}\rangle}}
+
+% processes
+\newcommand{\dtp}[1]{\withcolor{\colortp}{#1}} % just to define possible use of colours
+
+\newcommand{\tsende}[2]{\dtp{![\dte{#1}];{#2}}}
+\newcommand{\tsendp}[2]{\dtp{![{#1}];{#2}}}
+\newcommand{\trecve}[2]{\dtp{?[\dte{#1}];{#2}}}
+\newcommand{\trecvp}[2]{\dtp{?[{#1}];{#2}}}
+\newcommand{\toffer}[2]{\dtp{\&\{\lblleft:{#1}, \lblright:{#2}\}}}
+\newcommand{\ttake}[2]{\dtp{\oplus\{\lblleft:{#1}, \lblright:{#2}\}}}
+\newcommand{\tend}{\dtp{\code{end}}}
+\newcommand{\tbot}{\dtp{\bot}}
+
+%% Macros for judgments and such
+
+\newcommand{\scon}{\equiv}
+\newcommand{\sconalpha}{\equiv_\alpha}
+\newcommand{\freenames}[1]{\fnm{fn}({#1})}
+\newcommand{\stepsto}{\longrightarrow} % process steps to
+\newcommand{\evalsto}{\downarrow} % expression evaluates to
+\newcommand{\subst}[2]{[{#1}/{#2}]} % substitution
+\newcommand{\esubst}[2]{[\dexp{#1}/\dexp{#2}]} % substitution for expressions
+
+\newcommand{\oft}{\mathrel{:}} % is of type
+\newcommand{\oftj}{\mathrel{\triangleright}} % is of type in a process judgment
+\newcommand{\oftc}{\mathrel{:}} % is of type in a process judgment
+\newcommand{\ofte}[3]{\dexp{#1}\vdash\dexp{#2}\oftc\dtp{#3}}
+\newcommand{\oftp}[3]{\dexp{#1}\vdash\dproc{#2}\oftj\dproc{#3}}
+
+\newcommand{\completed}[1]{\dproc{#1}\ \text{completed}}
+
+% Macros for contexts and typings
+
+\newcommand{\sorting}[1]{\dexp{#1}}
+\newcommand{\typing}[1]{\dproc{#1}}
+\newcommand{\emptyctx}{\ensuremath{\cdot}}
+\newcommand{\typc}[3]{\dproc{#1},\vch{#2}\oft\dtp{#3}} % add to a typing
+\newcommand{\ctxc}[3]{\dexp{#1},\vex{#2}\oft\dte{#3}} % add to a context
+
+\newcommand{\typl}[3]{\dexp{\Gamma}(\vex{#2})=\dte{#3}} % lookup typ
+\newcommand{\ctxl}[3]{\dexp{#1}(\vex{#2})=\dte{#3}} % lookup context
+
+\newcommand{\join}[2]{\dproc{#1}\circ\dproc{#2}}
+\newcommand{\comp}[2]{\dproc{#1}\asymp\dproc{#2}}
+
+\newcommand{\dom}[1]{\ensuremath{\fnm{dom}({#1})}}
+\newcommand{\doms}[1]{\ensuremath{\fnm{dom}(\sorting{#1})}} % domain of a sorting
+\newcommand{\domt}[1]{\ensuremath{\fnm{dom}(\typing{#1})}} % domain of a typing
+\newcommand{\compatible}[2]{\ensuremath{\typing{#1}\mathrel{\asymp}\typing{#2}}}
+\newcommand{\compose}[2]{\ensuremath{\typing{#1}\mathrel{\circ}\typing{#2}}}
+
+\newcommand{\fv}[1]{\ensuremath{\fnm{fv}({#1})}} % free variables
+\newcommand{\fvp}[1]{\fv{\dproc{#1}}} % free variables in a proc
+
+
+%% Macros for LN things
+
+\newcommand{\atoms}{\ensuremath{\mathbb{A}}}
+\newcommand{\atomset}[1]{\atoms_{\code{#1}}}
+\newcommand{\atomsca}{\atomset{CA}}
+\newcommand{\atomsna}{\atomset{NA}}
+\newcommand{\atomska}{\atomset{KA}}
+\newcommand{\atomsea}{\atomset{EA}}
+
+% open/close process with expression
+\newcommand{\oppe}[2]{\dproc{#1}^{\dexp{#2}}}
+\newcommand{\clpe}[2]{^{\backslash\dexp{#2}}\dproc{#1}}
+
+% open/close process with channel
+\newcommand{\oppk}[2]{\dproc{#1}^{\vch{#2}}}
+\newcommand{\clpk}[2]{^{\backslash\vse{#2}}\dproc{#1}}
+
+% open/close process with session (name)
+\newcommand{\oppn}[2]{\dproc{#1}^{\vse{#2}}}
+\newcommand{\clpn}[2]{^{\backslash\vse{#2}}\dproc{#1}}
+
+% co finite quantifications
+
+\newcommand{\cofin}[2]{\forall {#1}\notin {#2},\ }
+\newcommand{\cofine}[2]{\cofin{\vex{#1}} {#2}}
+\newcommand{\cofink}[2]{\cofin{\vch{#1}} {#2}}
+\newcommand{\cofinn}[2]{\cofin{\vse{#1}} {#2}}
+
+% predicates
+
+\newcommand{\pred}[2]{\ensuremath{\dproc{#1}\mathrel{\to}\dproc{#2}}} % process reduction
+
+\newcommand{\lc}[1]{\fnm{lc}\ {#1}} % locally closed
+\newcommand{\lcp}[1]{\lc{\dproc{#1}}}
+\newcommand{\lce}[1]{\lc{\dexp{#1}}}
+
+\newcommand{\body}[1]{\fnm{body}\ {#1}} % at most one free index (0)
+\newcommand{\bodyp}[1]{\body{\dproc{#1}}}
+\newcommand{\bodye}[1]{\body{\dexp{#1}}}
+
+% some names
+
+\newcommand{\nuscr}{$\nu$-Scr}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "draft"
+%%% End:
+
